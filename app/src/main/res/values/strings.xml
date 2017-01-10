@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">WearTest</string>
+    <string name="dialog_ok">确定</string>
+    <string name="dialog_no">取消</string>
 </resources>
