@@ -1,4 +1,4 @@
-package com.ycsoft.weartest.common;
+package com.ycsoft.wear.common;
 
 import android.Manifest;
 import android.app.Application;
@@ -8,7 +8,7 @@ import android.os.Build;
 import android.os.Process;
 import android.text.TextUtils;
 
-import com.ycsoft.weartest.ui.BaseActivity;
+import com.ycsoft.wear.ui.BaseActivity;
 
 import org.xutils.x;
 

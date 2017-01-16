@@ -1,4 +1,4 @@
-package com.ycsoft.weartest;
+package com.ycsoft.wear;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;

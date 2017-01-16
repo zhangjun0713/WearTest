@@ -1,4 +1,4 @@
-package com.ycsoft.weartest.util;
+package com.ycsoft.wear.util;
 
 import android.content.Context;
 import android.widget.Toast;

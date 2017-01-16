@@ -1,4 +1,4 @@
-package com.ycsoft.weartest;
+package com.ycsoft.wear;
 
 import org.junit.Test;
 

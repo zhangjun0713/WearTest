@@ -1,10 +1,10 @@
-package com.ycsoft.weartest.ui;
+package com.ycsoft.wear.ui;
 
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 
-import com.ycsoft.weartest.common.YCApplication;
+import com.ycsoft.wear.common.YCApplication;
 
 /**
  * Created by zhangjun on 2016/10/17.

@@ -1,4 +1,4 @@
-package com.ycsoft.weartest.ui;
+package com.ycsoft.wear.ui;
 
 import android.app.Dialog;
 import android.content.Context;
@@ -8,7 +8,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.WindowManager;
 
-import com.ycsoft.weartest.R;
+import com.ycsoft.wear.R;
 
 import butterknife.ButterKnife;
 
