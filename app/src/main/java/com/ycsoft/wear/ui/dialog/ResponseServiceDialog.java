@@ -10,6 +10,7 @@ import android.widget.TextView;
 
 import com.ycsoft.wear.R;
 import com.ycsoft.wear.common.Constants;
+import com.ycsoft.wear.common.SpfConstants;
 import com.ycsoft.wear.ui.BaseDialog;
 import com.ycsoft.wear.util.SharedPreferenceUtil;
 import com.ycsoft.wear.util.ToastUtil;
@@ -40,7 +41,7 @@ public class ResponseServiceDialog extends BaseDialog {
         super(context, R.layout.dialog_response_service, null);
         mVibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
         this.roomNumber = roomNumber;
-        mSharedPreferenceUtil = new SharedPreferenceUtil(context, Constants.SPF_NAME);
+        mSharedPreferenceUtil = new SharedPreferenceUtil(context, SpfConstants.SPF_NAME);
     }
 
     @Override
@@ -65,9 +66,9 @@ public class ResponseServiceDialog extends BaseDialog {
                 ToastUtil.showToast(getContext(), "等待机服务器应答", true);
                 RequestParams params = new RequestParams(Constants.SERVER_IP + Constants.API_ACCEPT_SERVICE);
                 params.setCharset("UTF-8");
-                params.addBodyParameter("id", mSharedPreferenceUtil.getString("id", ""));
-                params.addBodyParameter("name", mSharedPreferenceUtil.getString("name", ""));
-                params.addBodyParameter("roomNumber", mSharedPreferenceUtil.getString("roomNumber", ""));
+                params.addBodyParameter(SpfConstants.KEY_ID, mSharedPreferenceUtil.getString(SpfConstants.KEY_ID, ""));
+                params.addBodyParameter(SpfConstants.KEY_NAME, mSharedPreferenceUtil.getString(SpfConstants.KEY_NAME, ""));
+                params.addBodyParameter(SpfConstants.KEY_ROOM_NUMBER, mSharedPreferenceUtil.getString(SpfConstants.KEY_ROOM_NUMBER, ""));
                 x.http().get(params, new Callback.CommonCallback<String>() {
                     @Override
                     public void onSuccess(String result) {
@@ -106,10 +107,10 @@ public class ResponseServiceDialog extends BaseDialog {
                 case 1:
                     Log.d(TAG, "RECEIVED result = " + msg.obj);
                     if (!(boolean) msg.obj) {
-                        mSharedPreferenceUtil.removeKey("roomNumber");
+                        mSharedPreferenceUtil.removeKey(SpfConstants.KEY_ROOM_NUMBER);
                         ToastUtil.showToast(getContext(), "已经有其他服务员先确定了服务！", true);
                     }
-                    mSharedPreferenceUtil.removeKey("needVibrate");
+                    mSharedPreferenceUtil.removeKey(SpfConstants.KEY_NEED_VIBRATE);
                     dismiss();
                     break;
             }
@@ -170,8 +171,8 @@ public class ResponseServiceDialog extends BaseDialog {
      */
     private void clearRoomInfo() {
         //1.清除房间号
-        mSharedPreferenceUtil.removeKey("roomNumber");
+        mSharedPreferenceUtil.removeKey(SpfConstants.KEY_ROOM_NUMBER);
         //2.清除震动提醒
-        mSharedPreferenceUtil.removeKey("needVibrate");
+        mSharedPreferenceUtil.removeKey(SpfConstants.KEY_NEED_VIBRATE);
     }
 }

@@ -8,8 +8,10 @@ import android.widget.Toast;
 
 import com.ycsoft.wear.R;
 import com.ycsoft.wear.common.Constants;
+import com.ycsoft.wear.common.SpfConstants;
 import com.ycsoft.wear.ui.BaseActivity;
 import com.ycsoft.wear.util.SharedPreferenceUtil;
+import com.ycsoft.wear.util.ToastUtil;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -39,7 +41,7 @@ public class LoginActivity extends BaseActivity {
     protected void initActivity() {
         setContentView(R.layout.activity_login);
         ButterKnife.bind(this);
-        mSharedPreferenceUtil = new SharedPreferenceUtil(this, Constants.SPF_NAME);
+        mSharedPreferenceUtil = new SharedPreferenceUtil(this, SpfConstants.SPF_NAME);
     }
 
     @Override
@@ -93,8 +95,8 @@ public class LoginActivity extends BaseActivity {
     private void login(final String name, final String floor, String password) {
         RequestParams params = new RequestParams(Constants.SERVER_IP + Constants.API_LOGIN);
         params.setCharset("UTF-8");
-        params.addBodyParameter("name", name);
-        params.addBodyParameter("floor", floor);
+        params.addBodyParameter(SpfConstants.KEY_NAME, name);
+        params.addBodyParameter(SpfConstants.KEY_FLOOR, floor);
         params.addBodyParameter("password", password);
         x.http().get(params, new Callback.CommonCallback<String>() {
             @Override
@@ -103,9 +105,10 @@ public class LoginActivity extends BaseActivity {
                     JSONObject jsonObject = new JSONObject(result);
                     if (jsonObject.getBoolean("result")) {
                         //登录成功
-                        mSharedPreferenceUtil.setValue("isLogin", true);
-                        mSharedPreferenceUtil.setValue("name", name);
-                        mSharedPreferenceUtil.setValue("floor", floor);
+                        mSharedPreferenceUtil.setValue(SpfConstants.KEY_IS_LOGIN, true);
+                        mSharedPreferenceUtil.setValue(SpfConstants.KEY_NAME, name);
+                        mSharedPreferenceUtil.setValue(SpfConstants.KEY_FLOOR, floor);
+                        ToastUtil.showToast(getApplicationContext(), "向服务器注册成功！", true);
                     }
                 } catch (JSONException e) {
                     e.printStackTrace();

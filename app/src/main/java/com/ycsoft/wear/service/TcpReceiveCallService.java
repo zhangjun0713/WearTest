@@ -12,6 +12,7 @@ import android.util.Log;
 
 import com.ycsoft.wear.common.Constants;
 import com.ycsoft.wear.common.SocketConstants;
+import com.ycsoft.wear.common.SpfConstants;
 import com.ycsoft.wear.ui.activity.MainActivity;
 import com.ycsoft.wear.util.SharedPreferenceUtil;
 
@@ -32,7 +33,7 @@ import java.util.concurrent.Executors;
  * 接收呼叫服务Socket服务
  */
 
-public class SocketReceiveCallService extends Service implements Runnable {
+public class TcpReceiveCallService extends Service implements Runnable {
     private static final String TAG = "SocketReceiveService";
     ExecutorService executorService;
     private SharedPreferenceUtil sharedPreferenceUtil;
@@ -42,7 +43,7 @@ public class SocketReceiveCallService extends Service implements Runnable {
         super.onCreate();
         executorService = Executors.newCachedThreadPool();
         executorService.execute(this);
-        sharedPreferenceUtil = new SharedPreferenceUtil(this, Constants.SPF_NAME);
+        sharedPreferenceUtil = new SharedPreferenceUtil(this, SpfConstants.SPF_NAME);
     }
 
     @Nullable
@@ -54,7 +55,7 @@ public class SocketReceiveCallService extends Service implements Runnable {
     @Override
     public void run() {
         try {
-            ServerSocket serverSocket = new ServerSocket(SocketConstants.PORT_CALL_SERVICE_RECEIVE);
+            ServerSocket serverSocket = new ServerSocket(SocketConstants.PORT_TCP_CALL_SERVICE_RECEIVE);
             while (true) {
                 executorService.execute(new SocketHandlerThread(serverSocket.accept()));
             }
@@ -82,12 +83,12 @@ public class SocketReceiveCallService extends Service implements Runnable {
                     socket.shutdownInput();
                     Log.d(TAG, "run: " + message);
                     JSONObject jsonObject = new JSONObject(message);
-                    String roomNumber = jsonObject.getString("roomNumber");
-                    String floor = jsonObject.getString("floor");
-                    if (floor.equals(sharedPreferenceUtil.getString("floor", ""))
-                            && sharedPreferenceUtil.getString("roomNumber", "").equals("")) {
-                        sharedPreferenceUtil.setValue("roomNumber", roomNumber);
-                        sharedPreferenceUtil.setValue("needVibrate", true);
+                    String roomNumber = jsonObject.getString(SpfConstants.KEY_ROOM_NUMBER);
+                    String floor = jsonObject.getString(SpfConstants.KEY_FLOOR);
+                    if (floor.equals(sharedPreferenceUtil.getString(SpfConstants.KEY_FLOOR, ""))
+                            && sharedPreferenceUtil.getString(SpfConstants.KEY_ROOM_NUMBER, "").equals("")) {
+                        sharedPreferenceUtil.setValue(SpfConstants.KEY_ROOM_NUMBER, roomNumber);
+                        sharedPreferenceUtil.setValue(SpfConstants.KEY_NEED_VIBRATE, true);
                         mHandler.sendEmptyMessage(OPEN);
                     }
                     out.write("ok".getBytes());

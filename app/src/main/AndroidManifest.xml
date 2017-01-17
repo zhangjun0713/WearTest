@@ -19,7 +19,7 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity
-            android:name="com.ycsoft.wear.ui.activity.MainActivity"
+            android:name=".ui.activity.SplashActivity"
             android:alwaysRetainTaskState="true"
             android:launchMode="singleTask">
             <intent-filter>
@@ -29,13 +29,22 @@
             </intent-filter>
         </activity>
         <activity
+            android:name="com.ycsoft.wear.ui.activity.MainActivity"
+            android:alwaysRetainTaskState="true"
+            android:launchMode="singleTask"/>
+        <activity
             android:name="com.ycsoft.wear.ui.activity.LoginActivity"
-            android:launchMode="singleTask">
-        </activity>
+            android:launchMode="singleTask"/>
+        <!--监听网络变化广播-->
+        <receiver android:name=".receiver.NetworkConnectedReceiver">
+            <intent-filter>
+                <action android:name="android.net.conn.CONNECTIVITY_CHANGE"/>
+            </intent-filter>
+        </receiver>
 
-        <service android:name="com.ycsoft.wear.service.UdpReceiveCancelCallService"/>
-        <service android:name="com.ycsoft.wear.service.SocketReceiveCallService"/>
-        <service android:name="com.ycsoft.wear.service.SocketReceiveServerIpService"/>
+        <service android:name=".service.UdpReceiveCancelCallService"/>
+        <service android:name=".service.UdpReceiveServerIpService"/>
+        <service android:name=".service.TcpReceiveCallService"/>
     </application>
 
 </manifest>

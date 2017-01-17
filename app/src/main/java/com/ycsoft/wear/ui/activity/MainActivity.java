@@ -17,7 +17,8 @@ import android.widget.Toast;
 
 import com.ycsoft.wear.R;
 import com.ycsoft.wear.common.Constants;
-import com.ycsoft.wear.service.SocketReceiveCallService;
+import com.ycsoft.wear.common.SpfConstants;
+import com.ycsoft.wear.service.TcpReceiveCallService;
 import com.ycsoft.wear.service.UdpReceiveCancelCallService;
 import com.ycsoft.wear.ui.BaseActivity;
 import com.ycsoft.wear.ui.dialog.ResponseServiceDialog;
@@ -56,14 +57,14 @@ public class MainActivity extends BaseActivity {
     protected void initActivity() {
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
-        mSharedPreferenceUtil = new SharedPreferenceUtil(this, Constants.SPF_NAME);
+        mSharedPreferenceUtil = new SharedPreferenceUtil(this, SpfConstants.SPF_NAME);
         if (!isWorked(UdpReceiveCancelCallService.class.getName())) {
             Intent startReceiver = new Intent(this, UdpReceiveCancelCallService.class);
             startReceiver.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
             startService(startReceiver);
         }
-        if (!isWorked(SocketReceiveCallService.class.getName())) {
-            Intent startReceiver = new Intent(this, SocketReceiveCallService.class);
+        if (!isWorked(TcpReceiveCallService.class.getName())) {
+            Intent startReceiver = new Intent(this, TcpReceiveCallService.class);
             startReceiver.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
             startService(startReceiver);
         }
@@ -92,7 +93,7 @@ public class MainActivity extends BaseActivity {
             public void onReceive(Context context, Intent intent) {
                 switch (intent.getAction()) {
                     case Constants.BC_SHOW_CALL_SERVICE_DIALOG:
-                        showServiceDialog(mSharedPreferenceUtil.getString("roomNumber", ""));
+                        showServiceDialog(mSharedPreferenceUtil.getString(SpfConstants.KEY_ROOM_NUMBER, ""));
                         break;
                     case Constants.BC_SHOW_CANCEL_SERVICE_DIALOG:
                         if (dialog != null && dialog.isShowing()) {
@@ -110,21 +111,21 @@ public class MainActivity extends BaseActivity {
 
     @Override
     protected void initView() {
-        if (mSharedPreferenceUtil.getBoolean("isLogin", false)) {
-            tvStaffName.setText(mSharedPreferenceUtil.getString("name", ""));
-            if (!mSharedPreferenceUtil.getString("roomNumber", "").equals("")) {
+        if (mSharedPreferenceUtil.getBoolean(SpfConstants.KEY_IS_LOGIN, false)) {
+            tvStaffName.setText(mSharedPreferenceUtil.getString(SpfConstants.KEY_NAME, ""));
+            if (!mSharedPreferenceUtil.getString(SpfConstants.KEY_ROOM_NUMBER, "").equals("")) {
                 btnFinishedService.setVisibility(View.VISIBLE);
             }
         } else {
             goLoginPage();
             finish();
         }
-        if (!mSharedPreferenceUtil.getString("roomNumber", "").equals("")) {
-            if (mSharedPreferenceUtil.getBoolean("needVibrate", false)) {
+        if (!mSharedPreferenceUtil.getString(SpfConstants.KEY_ROOM_NUMBER, "").equals("")) {
+            if (mSharedPreferenceUtil.getBoolean(SpfConstants.KEY_NEED_VIBRATE, false)) {
                 //震动，并显示对话框！
-                showServiceDialog(mSharedPreferenceUtil.getString("roomNumber", ""));
+                showServiceDialog(mSharedPreferenceUtil.getString(SpfConstants.KEY_ROOM_NUMBER, ""));
             } else {
-                tvInfo.setText("请尽快到客户房间\n" + mSharedPreferenceUtil.getString("roomNumber", ""));
+                tvInfo.setText("请尽快到客户房间\n" + mSharedPreferenceUtil.getString(SpfConstants.KEY_ROOM_NUMBER, ""));
             }
         }
     }
@@ -137,13 +138,13 @@ public class MainActivity extends BaseActivity {
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.btn_finished_service:
-                mSharedPreferenceUtil.removeKey("roomNumber");
+                mSharedPreferenceUtil.removeKey(SpfConstants.KEY_ROOM_NUMBER);
                 tvInfo.setText("没有客户呼叫服务");
                 //TODO:调用HTTP接口来通知服务器服务员完成了服务
                 RequestParams params = new RequestParams(Constants.SERVER_IP + Constants.API_FINISHED_SERVICE);
-                params.addBodyParameter("id", mSharedPreferenceUtil.getString("id", ""));
-                params.addBodyParameter("name", mSharedPreferenceUtil.getString("name", ""));
-                params.addBodyParameter("roomNumber", mSharedPreferenceUtil.getString("roomNumber", ""));
+                params.addBodyParameter(SpfConstants.KEY_ID, mSharedPreferenceUtil.getString(SpfConstants.KEY_ID, ""));
+                params.addBodyParameter(SpfConstants.KEY_NAME, mSharedPreferenceUtil.getString(SpfConstants.KEY_NAME, ""));
+                params.addBodyParameter(SpfConstants.KEY_ROOM_NUMBER, mSharedPreferenceUtil.getString(SpfConstants.KEY_ROOM_NUMBER, ""));
                 params.setCharset("UTF-8");
                 x.http().get(params, new Callback.CommonCallback<String>() {
                     @Override
@@ -172,7 +173,7 @@ public class MainActivity extends BaseActivity {
                 });
                 break;
             case R.id.btn_logout:
-                if (mSharedPreferenceUtil.getString("roomNumber", "").equals("")) {
+                if (mSharedPreferenceUtil.getString(SpfConstants.KEY_ROOM_NUMBER, "").equals("")) {
                     logoutDialog("退出提示", "真的要退出登录吗？");
                 } else {
                     Toast.makeText(getApplicationContext(), "您当前还没有确认完成服务，不能退出登录！",
@@ -187,7 +188,7 @@ public class MainActivity extends BaseActivity {
      */
     private void showServiceDialog(String roomNumber) {
         ToastUtil.showToast(this,
-                mSharedPreferenceUtil.getString("roomNumber", "")
+                mSharedPreferenceUtil.getString(SpfConstants.KEY_ROOM_NUMBER, "")
                         + " 客户正在呼叫服务！", true);
         dialog = new ResponseServiceDialog(this, roomNumber);
         dialog.show(RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
@@ -196,7 +197,7 @@ public class MainActivity extends BaseActivity {
             @Override
             public void onDismiss(DialogInterface dialog) {
                 //更新界面显示
-                String roomNumber = mSharedPreferenceUtil.getString("roomNumber", "");
+                String roomNumber = mSharedPreferenceUtil.getString(SpfConstants.KEY_ROOM_NUMBER, "");
                 if (roomNumber.equals("")) {
                     tvInfo.setText("没有客户呼叫服务");
                     btnFinishedService.setVisibility(View.GONE);
@@ -225,7 +226,7 @@ public class MainActivity extends BaseActivity {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 Toast.makeText(getApplicationContext(), "\"" +
-                                mSharedPreferenceUtil.getString("name", "") + "\"" + "已退出！",
+                                mSharedPreferenceUtil.getString(SpfConstants.KEY_NAME, "") + "\"" + "已退出！",
                         Toast.LENGTH_SHORT).show();
                 mHandler.obtainMessage(LOGOUT).sendToTarget();
                 dialog.dismiss();
@@ -245,7 +246,7 @@ public class MainActivity extends BaseActivity {
             switch (msg.what) {
                 case FINISHED_SERVICE:
                     Toast.makeText(getApplicationContext(), "\"" +
-                                    mSharedPreferenceUtil.getString("name", "") + "\"" + "您已完成了当前服务！",
+                                    mSharedPreferenceUtil.getString(SpfConstants.KEY_NAME, "") + "\"" + "您已完成了当前服务！",
                             Toast.LENGTH_SHORT).show();
                     btnFinishedService.setVisibility(View.GONE);
                     break;
@@ -261,8 +262,8 @@ public class MainActivity extends BaseActivity {
      */
     private void goLogout() {
         RequestParams params = new RequestParams(Constants.SERVER_IP + Constants.API_LOGOUT);
-        params.addBodyParameter("id", mSharedPreferenceUtil.getString("id", ""));
-        params.addBodyParameter("name", mSharedPreferenceUtil.getString("name", ""));
+        params.addBodyParameter(SpfConstants.KEY_ID, mSharedPreferenceUtil.getString(SpfConstants.KEY_ID, ""));
+        params.addBodyParameter(SpfConstants.KEY_NAME, mSharedPreferenceUtil.getString(SpfConstants.KEY_NAME, ""));
         params.setCharset("UTF-8");
         x.http().get(params, new Callback.CommonCallback<String>() {
             @Override
@@ -271,9 +272,9 @@ public class MainActivity extends BaseActivity {
                     JSONObject jsonObject = new JSONObject(result);
                     if (jsonObject.getBoolean("result")) {
                         //退出成功
-                        mSharedPreferenceUtil.setValue("isLogin", false);
-                        mSharedPreferenceUtil.removeKey("name");
-                        mSharedPreferenceUtil.removeKey("roomNumber");
+                        mSharedPreferenceUtil.setValue(SpfConstants.KEY_IS_LOGIN, false);
+                        mSharedPreferenceUtil.removeKey(SpfConstants.KEY_NAME);
+                        mSharedPreferenceUtil.removeKey(SpfConstants.KEY_ROOM_NUMBER);
                     }
                 } catch (JSONException e) {
                     e.printStackTrace();
