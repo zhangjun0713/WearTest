@@ -15,6 +15,10 @@ public class Constants {
      */
     public static final String BC_SHOW_CANCEL_SERVICE_DIALOG = "bc_show_cancel_service_dialog";
     /**
+     * 广播通知点击完成服务后返回结果
+     */
+    public static final String BC_FINISHED_SERVICE_SUCCEED = "bc_finished_service_succeed";
+    /**
      * 接受服务api
      */
     public static final String API_ACCEPT_SERVICE = "/api/staff/acceptService";

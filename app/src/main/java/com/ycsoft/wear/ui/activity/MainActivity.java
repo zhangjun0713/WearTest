@@ -1,6 +1,5 @@
 package com.ycsoft.wear.ui.activity;
 
-import android.app.ActivityManager;
 import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -17,9 +16,9 @@ import android.widget.Toast;
 
 import com.ycsoft.wear.R;
 import com.ycsoft.wear.common.Constants;
+import com.ycsoft.wear.common.SocketConstants;
 import com.ycsoft.wear.common.SpfConstants;
-import com.ycsoft.wear.service.TcpReceiveCallService;
-import com.ycsoft.wear.service.UdpReceiveCancelCallService;
+import com.ycsoft.wear.service.WebSocketService;
 import com.ycsoft.wear.ui.BaseActivity;
 import com.ycsoft.wear.ui.dialog.ResponseServiceDialog;
 import com.ycsoft.wear.util.SharedPreferenceUtil;
@@ -27,11 +26,6 @@ import com.ycsoft.wear.util.ToastUtil;
 
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.xutils.common.Callback;
-import org.xutils.http.RequestParams;
-import org.xutils.x;
-
-import java.util.ArrayList;
 
 import butterknife.BindString;
 import butterknife.BindView;
@@ -58,30 +52,7 @@ public class MainActivity extends BaseActivity {
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
         mSharedPreferenceUtil = new SharedPreferenceUtil(this, SpfConstants.SPF_NAME);
-        if (!isWorked(UdpReceiveCancelCallService.class.getName())) {
-            Intent startReceiver = new Intent(this, UdpReceiveCancelCallService.class);
-            startReceiver.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
-            startService(startReceiver);
-        }
-        if (!isWorked(TcpReceiveCallService.class.getName())) {
-            Intent startReceiver = new Intent(this, TcpReceiveCallService.class);
-            startReceiver.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
-            startService(startReceiver);
-        }
         initReceiver();
-    }
-
-    public boolean isWorked(String serviceName) {
-        ActivityManager myManager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
-        ArrayList<ActivityManager.RunningServiceInfo> runningService =
-                (ArrayList<ActivityManager.RunningServiceInfo>) myManager.getRunningServices(30);
-        for (int i = 0; i < runningService.size(); i++) {
-            if (runningService.get(i).service.getClassName()
-                    .equals(serviceName)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     /**
@@ -93,12 +64,20 @@ public class MainActivity extends BaseActivity {
             public void onReceive(Context context, Intent intent) {
                 switch (intent.getAction()) {
                     case Constants.BC_SHOW_CALL_SERVICE_DIALOG:
+                        //显示呼叫服务对话框
                         showServiceDialog(mSharedPreferenceUtil.getString(SpfConstants.KEY_ROOM_NUMBER, ""));
                         break;
                     case Constants.BC_SHOW_CANCEL_SERVICE_DIALOG:
+                        //取消呼叫服务对话框
                         if (dialog != null && dialog.isShowing()) {
                             dialog.dismiss();
                         }
+                        break;
+                    case Constants.BC_FINISHED_SERVICE_SUCCEED:
+                        //确认完成服务成功
+                        mSharedPreferenceUtil.removeKey(SpfConstants.KEY_ROOM_NUMBER);
+                        tvInfo.setText("");
+                        btnFinishedService.setVisibility(View.GONE);
                         break;
                 }
             }
@@ -106,6 +85,7 @@ public class MainActivity extends BaseActivity {
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(Constants.BC_SHOW_CALL_SERVICE_DIALOG);
         intentFilter.addAction(Constants.BC_SHOW_CANCEL_SERVICE_DIALOG);
+        intentFilter.addAction(Constants.BC_FINISHED_SERVICE_SUCCEED);
         registerReceiver(mReceiver, intentFilter);
     }
 
@@ -138,41 +118,25 @@ public class MainActivity extends BaseActivity {
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.btn_finished_service:
-                mSharedPreferenceUtil.removeKey(SpfConstants.KEY_ROOM_NUMBER);
-                tvInfo.setText("没有客户呼叫服务");
-                //TODO:调用HTTP接口来通知服务器服务员完成了服务
-                RequestParams params = new RequestParams(Constants.SERVER_IP + Constants.API_FINISHED_SERVICE);
-                params.addBodyParameter(SpfConstants.KEY_ID, mSharedPreferenceUtil.getString(SpfConstants.KEY_ID, ""));
-                params.addBodyParameter(SpfConstants.KEY_NAME, mSharedPreferenceUtil.getString(SpfConstants.KEY_NAME, ""));
-                params.addBodyParameter(SpfConstants.KEY_ROOM_NUMBER, mSharedPreferenceUtil.getString(SpfConstants.KEY_ROOM_NUMBER, ""));
-                params.setCharset("UTF-8");
-                x.http().get(params, new Callback.CommonCallback<String>() {
-                    @Override
-                    public void onSuccess(String result) {
-                        try {
-                            JSONObject jsonObject = new JSONObject(result);
-                            //完成了确认完成服务操作
-                            mHandler.obtainMessage(FINISHED_SERVICE, jsonObject.getBoolean("result"))
-                                    .sendToTarget();
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                        }
+                //完成服务
+                if (WebSocketService.getWebSocketClient() != null) {
+                    try {
+                        JSONObject jsonObject = new JSONObject();
+                        jsonObject.put("action", SocketConstants.ACTION_FINISHED_SERVICE);
+                        jsonObject.put(SpfConstants.KEY_ID, mSharedPreferenceUtil
+                                .getString(SpfConstants.KEY_ID, ""));
+                        jsonObject.put(SpfConstants.KEY_NAME, mSharedPreferenceUtil
+                                .getString(SpfConstants.KEY_NAME, ""));
+                        jsonObject.put(SpfConstants.KEY_ROOM_NUMBER, mSharedPreferenceUtil
+                                .getString(SpfConstants.KEY_ROOM_NUMBER, ""));
+                        WebSocketService.getWebSocketClient().send(jsonObject.toString());
+                    } catch (JSONException e) {
+                        e.printStackTrace();
                     }
-
-                    @Override
-                    public void onError(Throwable ex, boolean isOnCallback) {
-                    }
-
-                    @Override
-                    public void onCancelled(CancelledException cex) {
-                    }
-
-                    @Override
-                    public void onFinished() {
-                    }
-                });
+                }
                 break;
             case R.id.btn_logout:
+                //退出登录
                 if (mSharedPreferenceUtil.getString(SpfConstants.KEY_ROOM_NUMBER, "").equals("")) {
                     logoutDialog("退出提示", "真的要退出登录吗？");
                 } else {
@@ -187,9 +151,7 @@ public class MainActivity extends BaseActivity {
      * 显示服务提醒对话框
      */
     private void showServiceDialog(String roomNumber) {
-        ToastUtil.showToast(this,
-                mSharedPreferenceUtil.getString(SpfConstants.KEY_ROOM_NUMBER, "")
-                        + " 客户正在呼叫服务！", true);
+        ToastUtil.showToast(this, roomNumber + " 客户正在呼叫服务！", true);
         dialog = new ResponseServiceDialog(this, roomNumber);
         dialog.show(RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
         dialog.setCanceledOnTouchOutside(false);
@@ -199,7 +161,7 @@ public class MainActivity extends BaseActivity {
                 //更新界面显示
                 String roomNumber = mSharedPreferenceUtil.getString(SpfConstants.KEY_ROOM_NUMBER, "");
                 if (roomNumber.equals("")) {
-                    tvInfo.setText("没有客户呼叫服务");
+                    tvInfo.setText("");
                     btnFinishedService.setVisibility(View.GONE);
                 } else {
                     tvInfo.setText("请尽快到客户房间\n" + roomNumber);
@@ -238,65 +200,32 @@ public class MainActivity extends BaseActivity {
         builder.show();
     }
 
-    private static final int FINISHED_SERVICE = 1;
-    private static final int LOGOUT = 2;
+    /**
+     * 退出登录
+     */
+    private static final int LOGOUT = 1;
     private Handler mHandler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
             switch (msg.what) {
-                case FINISHED_SERVICE:
-                    Toast.makeText(getApplicationContext(), "\"" +
-                                    mSharedPreferenceUtil.getString(SpfConstants.KEY_NAME, "") + "\"" + "您已完成了当前服务！",
-                            Toast.LENGTH_SHORT).show();
-                    btnFinishedService.setVisibility(View.GONE);
-                    break;
                 case LOGOUT:
-                    goLogout();
+                    if (WebSocketService.getWebSocketClient() != null) {
+                        try {
+                            JSONObject jsonObject = new JSONObject();
+                            jsonObject.put("action", SocketConstants.ACTION_LOGOUT);
+                            jsonObject.put(SpfConstants.KEY_ID, mSharedPreferenceUtil
+                                    .getString(SpfConstants.KEY_ID, ""));
+                            jsonObject.put(SpfConstants.KEY_NAME, mSharedPreferenceUtil
+                                    .getString(SpfConstants.KEY_NAME, ""));
+                            WebSocketService.getWebSocketClient().send(jsonObject.toString());
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                    }
                     break;
             }
         }
     };
-
-    /**
-     * 退出登录
-     */
-    private void goLogout() {
-        RequestParams params = new RequestParams(Constants.SERVER_IP + Constants.API_LOGOUT);
-        params.addBodyParameter(SpfConstants.KEY_ID, mSharedPreferenceUtil.getString(SpfConstants.KEY_ID, ""));
-        params.addBodyParameter(SpfConstants.KEY_NAME, mSharedPreferenceUtil.getString(SpfConstants.KEY_NAME, ""));
-        params.setCharset("UTF-8");
-        x.http().get(params, new Callback.CommonCallback<String>() {
-            @Override
-            public void onSuccess(String result) {
-                try {
-                    JSONObject jsonObject = new JSONObject(result);
-                    if (jsonObject.getBoolean("result")) {
-                        //退出成功
-                        mSharedPreferenceUtil.setValue(SpfConstants.KEY_IS_LOGIN, false);
-                        mSharedPreferenceUtil.removeKey(SpfConstants.KEY_NAME);
-                        mSharedPreferenceUtil.removeKey(SpfConstants.KEY_ROOM_NUMBER);
-                    }
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-            }
-
-            @Override
-            public void onError(Throwable ex, boolean isOnCallback) {
-
-            }
-
-            @Override
-            public void onCancelled(CancelledException cex) {
-
-            }
-
-            @Override
-            public void onFinished() {
-
-            }
-        });
-    }
 
     /**
      * 跳入登录界面

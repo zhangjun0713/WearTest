@@ -28,6 +28,10 @@ public class SpfConstants {
      */
     public static final String KEY_ID = "id";
     /**
+     * 已登录的服务员的密码
+     */
+    public static final String KEY_PWD = "password";
+    /**
      * 已经注册的服务楼层
      */
     public static final String KEY_FLOOR = "floor";
