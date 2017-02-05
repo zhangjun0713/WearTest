@@ -47,6 +47,7 @@ public class SplashActivity extends BaseActivity {
         ButterKnife.bind(this);
         mSharedPreferenceUtil = new SharedPreferenceUtil(this, SpfConstants.SPF_NAME);
         initReceiver();
+        startFindServer();
     }
 
     private void initReceiver() {
@@ -58,7 +59,6 @@ public class SplashActivity extends BaseActivity {
                 btnConnectServer.setVisibility(View.GONE);
                 ToastUtil.showToast(getApplicationContext(), "连接服务器成功！", true);
                 goMainActivity();
-                finish();
             }
         };
         registerReceiver(mReceiver, intentFilter);
@@ -70,6 +70,7 @@ public class SplashActivity extends BaseActivity {
     private void goMainActivity() {
         Intent intent = new Intent(this, MainActivity.class);
         startActivity(intent);
+        finish();
     }
 
     @Override
@@ -81,7 +82,6 @@ public class SplashActivity extends BaseActivity {
             ivRegister.setBackgroundResource(R.drawable.icon_connect_server);
             btnConnectServer.setVisibility(View.GONE);
             goMainActivity();
-            this.finish();
         }
     }
 
@@ -92,6 +92,13 @@ public class SplashActivity extends BaseActivity {
 
     @OnClick(R.id.btn_connect_server)
     void onClick() {
+        startFindServer();
+    }
+
+    /**
+     * 开始在局域网中寻找服务器
+     */
+    private void startFindServer() {
         try {
             if (NetworkUtil.isConnected(this)) {//已连接wifi
                 if (ToolUtil.isServiceLive(this, UdpReceiveServerIpService.class.getName())) {

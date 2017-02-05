@@ -1,23 +1,23 @@
 package com.ycsoft.wear.ui.activity;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.text.TextUtils;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.Toast;
 
 import com.ycsoft.wear.R;
-import com.ycsoft.wear.common.Constants;
 import com.ycsoft.wear.common.SpfConstants;
+import com.ycsoft.wear.service.WebSocketService;
 import com.ycsoft.wear.ui.BaseActivity;
 import com.ycsoft.wear.util.SharedPreferenceUtil;
-import com.ycsoft.wear.util.ToastUtil;
 
+import org.java_websocket.client.WebSocketClient;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.xutils.common.Callback;
-import org.xutils.http.RequestParams;
-import org.xutils.x;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -29,6 +29,10 @@ import butterknife.OnClick;
  */
 
 public class LoginActivity extends BaseActivity {
+    /**
+     * 广播通知登录结果
+     */
+    public static final String BC_LOGIN_RESULT = "bc_login_result";
     @BindView(R.id.et_name)
     EditText etName;
     @BindView(R.id.et_floor)
@@ -42,6 +46,28 @@ public class LoginActivity extends BaseActivity {
         setContentView(R.layout.activity_login);
         ButterKnife.bind(this);
         mSharedPreferenceUtil = new SharedPreferenceUtil(this, SpfConstants.SPF_NAME);
+        initReceiver();
+    }
+
+    /**
+     * 初始化广播接收器
+     */
+    private void initReceiver() {
+        IntentFilter filter = new IntentFilter(BC_LOGIN_RESULT);
+        BroadcastReceiver mReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if (intent.getBooleanExtra("result", false)) {
+                    //登录成功，提示
+                    Toast.makeText(getApplication(), "登录成功！", Toast.LENGTH_SHORT).show();
+                    finish();
+                } else {
+                    //登录失败，提示
+                    Toast.makeText(getApplication(), "登录失败！请重试！", Toast.LENGTH_SHORT).show();
+                }
+            }
+        };
+        registerReceiver(mReceiver, filter);
     }
 
     @Override
@@ -70,62 +96,22 @@ public class LoginActivity extends BaseActivity {
         name = etName.getText().toString().trim();
         floor = etFloor.getText().toString().trim();
         password = etPassword.getText().toString().trim();
-//        if (name.equals("admin") && password.equals("admin")) {
-//            Toast.makeText(this, "登录成功！欢迎admin！", Toast.LENGTH_SHORT).show();
-//            mSharedPreferenceUtil.setValue("isLogin", true);
-//            mSharedPreferenceUtil.setValue("name", "admin");
-//            mSharedPreferenceUtil.setValue("floor", floor);
-//        } else if (name.equals("guest") && password.equals("guest")) {
-//            Toast.makeText(this, "登录成功！欢迎guest！", Toast.LENGTH_SHORT).show();
-//            mSharedPreferenceUtil.setValue("isLogin", true);
-//            mSharedPreferenceUtil.setValue("name", "guest");
-//            mSharedPreferenceUtil.setValue("floor", floor);
-//        } else {
-//            mSharedPreferenceUtil.setValue("isLogin", false);
-//            mSharedPreferenceUtil.removeKey("name");
-//            return;
-//        }
         login(name, floor, password);
-        //登录成功跳转到主页
-        Intent intent = new Intent(this, MainActivity.class);
-        startActivity(intent);
-        finish();
     }
 
     private void login(final String name, final String floor, String password) {
-        RequestParams params = new RequestParams(Constants.SERVER_IP + Constants.API_LOGIN);
-        params.setCharset("UTF-8");
-        params.addBodyParameter(SpfConstants.KEY_NAME, name);
-        params.addBodyParameter(SpfConstants.KEY_FLOOR, floor);
-        params.addBodyParameter("password", password);
-        x.http().get(params, new Callback.CommonCallback<String>() {
-            @Override
-            public void onSuccess(String result) {
-                try {
-                    JSONObject jsonObject = new JSONObject(result);
-                    if (jsonObject.getBoolean("result")) {
-                        //登录成功
-                        mSharedPreferenceUtil.setValue(SpfConstants.KEY_IS_LOGIN, true);
-                        mSharedPreferenceUtil.setValue(SpfConstants.KEY_NAME, name);
-                        mSharedPreferenceUtil.setValue(SpfConstants.KEY_FLOOR, floor);
-                        ToastUtil.showToast(getApplicationContext(), "向服务器注册成功！", true);
-                    }
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
+        try {
+            JSONObject jsonObject = new JSONObject();
+            jsonObject.put(SpfConstants.KEY_ID, name);
+            jsonObject.put(SpfConstants.KEY_FLOOR, floor);
+            jsonObject.put(SpfConstants.KEY_PWD, password);
+            mSharedPreferenceUtil.setValue(SpfConstants.KEY_PWD, password);
+            WebSocketClient mWebSocketClient = WebSocketService.getWebSocketClient();
+            if (mWebSocketClient != null) {
+                mWebSocketClient.send(jsonObject.toString());
             }
-
-            @Override
-            public void onError(Throwable ex, boolean isOnCallback) {
-            }
-
-            @Override
-            public void onCancelled(CancelledException cex) {
-            }
-
-            @Override
-            public void onFinished() {
-            }
-        });
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
     }
 }

@@ -21,4 +21,29 @@ public class SocketConstants {
      * 取消呼叫服务广播接收端口
      */
     public static final int PORT_UDP_CANCEL_CALL_SERVICE_RECEIVE = 9004;
+    /**
+     * 登录操作
+     */
+    public static final String ACTION_LOGIN = "login";
+    /**
+     * 退出登录操作
+     */
+    public static final String ACTION_LOGOUT = "logout";
+    /**
+     * 接受服务操作
+     */
+    public static final String ACTION_ACCEPT_SERVICE = "acceptService";
+    /**
+     * 完成服务操作
+     */
+    public static final String ACTION_FINISHED_SERVICE = "finishedService";
+    /**
+     * 呼叫服务操作
+     */
+    public static final String ACTION_CALL_SERVICE = "callService";
+    /**
+     * 取消呼叫服务
+     */
+    public static final String ACTION_CANCEL_SERVICE = "cancelService";
+
 }
