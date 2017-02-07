@@ -1,9 +1,6 @@
 package com.ycsoft.wear.service;
 
 import android.app.ActivityManager;
-import android.app.Notification;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
@@ -13,19 +10,19 @@ import android.os.Message;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
-import com.ycsoft.wear.R;
 import com.ycsoft.wear.common.Constants;
 import com.ycsoft.wear.common.SocketConstants;
 import com.ycsoft.wear.common.SpfConstants;
-import com.ycsoft.wear.ui.activity.LoginActivity;
-import com.ycsoft.wear.ui.activity.MainActivity;
 import com.ycsoft.wear.socket.MyWebSocketClient;
+import com.ycsoft.wear.ui.activity.MainActivity;
 import com.ycsoft.wear.util.SharedPreferenceUtil;
 import com.ycsoft.wear.util.ToastUtil;
+import com.ycsoft.wear.util.ToolUtil;
 
 import org.java_websocket.client.WebSocketClient;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.xutils.common.Callback;
 
 import java.net.URI;
 import java.util.List;
@@ -40,10 +37,10 @@ import java.util.concurrent.Executors;
 public class WebSocketService extends Service {
     private static final String TAG = "WebSocketService";
     private static final String URI_PREFIX = "ws://";
-    private static final String URI_SUFFIX = ":80/api/test";
+    private static final String URI_SUFFIX = ":80/api/waiter?";
+    public static String URI_TOKEN = "";
     private ExecutorService executorService;
     private static WebSocketClient webSocketClient;
-    private SharedPreferenceUtil mSharedPreferenceUtil;
 
     /**
      * 获取WebSocketClient
@@ -57,9 +54,13 @@ public class WebSocketService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        mSharedPreferenceUtil = new SharedPreferenceUtil(this, SpfConstants.SPF_NAME);
         executorService = Executors.newCachedThreadPool();
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
         executorService.execute(new WebSocketConnect());
+        return super.onStartCommand(intent, flags, startId);
     }
 
     @Nullable
@@ -107,42 +108,21 @@ public class WebSocketService extends Service {
                         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                         startActivity(intent);
                     }
-                    try {
-                        JSONObject object = new JSONObject();
-                        object.put("action", SocketConstants.ACTION_ACCEPT_SERVICE);
-                        object.put("result", true);
-                        webSocketClient.send(object.toString());
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                    }
                     break;
                 case CANCEL_SERVICE:
                     //取消呼叫服务
-                    Intent cancelCallIntent = new Intent(Constants.BC_SHOW_CANCEL_SERVICE_DIALOG);
+                    Intent cancelCallIntent = new Intent(Constants.BC_CANCEL_SERVICE_DIALOG);
                     sendBroadcast(cancelCallIntent);
                     break;
                 case RE_CONNECT_SERVER:
                     //与服务器连接异常或关闭了需要重新连接
-                    executorService.execute(new WebSocketConnect());
-                    break;
-                case GO_TO_LOGIN:
-                    //1.已经在其它地方登录了或者退出登录了，需要重新登录
-                    Intent intent = new Intent(getApplicationContext(), LoginActivity.class);
-                    intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
-                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-//                    startActivity(intent);
-                    //2.如果是锁屏状态下需要发送通知信息提示用户
-                    showCancelNotification(intent);
-                    //3.清除本机登录信息
-                    clearLoginInfo();
+                    ToolUtil.getToken(getApplicationContext(), mCallback);
                     break;
                 case ACCEPT_SERVICE_RESULT:
-                    if ((boolean) msg.obj) {
-                        ToastUtil.showToast(getApplicationContext(), "请尽快去\n" + mSharedPreferenceUtil
-                                .getString(SpfConstants.KEY_ROOM_NUMBER, "") + "\n服务！", true);
-                    } else {
-                        ToastUtil.showToast(getApplicationContext(), "已经有其他服务业先接受了服务请求！", true);
-                    }
+                    Intent acceptResultIntent = new Intent();
+                    acceptResultIntent.putExtra("result", (boolean) msg.obj);
+                    acceptResultIntent.setAction(Constants.BC_ACCEPT_SERVICE_SUCCEED);
+                    sendBroadcast(acceptResultIntent);
                     break;
                 case FINISHED_SERVICE_RESULT:
                     if ((boolean) msg.obj) {
@@ -171,18 +151,6 @@ public class WebSocketService extends Service {
     }
 
     /**
-     * 清除登录信息
-     */
-    private void clearLoginInfo() {
-        mSharedPreferenceUtil.removeKey(SpfConstants.KEY_ID);
-        mSharedPreferenceUtil.removeKey(SpfConstants.KEY_NAME);
-        mSharedPreferenceUtil.removeKey(SpfConstants.KEY_FLOOR);
-        mSharedPreferenceUtil.removeKey(SpfConstants.KEY_IS_LOGIN);
-        mSharedPreferenceUtil.removeKey(SpfConstants.KEY_ROOM_NUMBER);
-        mSharedPreferenceUtil.removeKey(SpfConstants.KEY_NEED_VIBRATE);
-    }
-
-    /**
      * 建立WebSocket连接线程类
      */
     private class WebSocketConnect implements Runnable {
@@ -195,11 +163,13 @@ public class WebSocketService extends Service {
                     webSocketClient = null;
                 }
                 webSocketClient = new MyWebSocketClient(getApplication(), mHandler,
-                        new URI(URI_PREFIX + Constants.SERVER_IP + URI_SUFFIX));
+                        new URI(URI_PREFIX + Constants.SERVER_IP + URI_SUFFIX + URI_TOKEN));
                 boolean b = webSocketClient.connectBlocking();
                 if (b) {
+                    Constants.isConnectedServer = true;
                     Log.d(TAG, "run: 与服务器连接成功！");
                 } else {
+                    Constants.isConnectedServer = false;
                     Log.d(TAG, "run: 与服务器连接失败！");
                 }
             } catch (Exception e) {
@@ -209,28 +179,58 @@ public class WebSocketService extends Service {
     }
 
     /**
-     * 显示提醒
+     * 在此回调对象中处理获取Token结果
      */
-    private void showCancelNotification(Intent intent) {
-        NotificationManager notificationManager = (NotificationManager)
-                getSystemService(Context.NOTIFICATION_SERVICE);
-        Notification notification = new Notification.Builder(getApplicationContext())
-                .setSmallIcon(R.mipmap.ic_launcher)
-                .setTicker("已经在其它地方登录了或者退出登录了！")
-                .setAutoCancel(true)
-                .setWhen(System.currentTimeMillis())
-                .setContentTitle("重新登录提醒！")
-                .setContentIntent(PendingIntent.getActivity(getApplicationContext(), 0, intent, 0))
-                .setContentText(mSharedPreferenceUtil.getString(SpfConstants.KEY_ROOM_NUMBER, "")
-                        + "已经在其它地方登录了或者退出登录了！")
-                .getNotification();
-        notificationManager.notify(1, notification);
-    }
+    private Callback.CommonCallback<String> mCallback = new Callback.CommonCallback<String>() {
+        @Override
+        public void onSuccess(String result) {
+            try {
+                JSONObject jsonObject = new JSONObject(result);
+                if (jsonObject.getBoolean("Result")) {
+                    if (jsonObject.getBoolean("Result")) {
+                        //1.登录成功，获取Token
+                        String token = jsonObject.getString("Token");
+                        URI_TOKEN = "token=" + token;
+                        //2.清除之前连接的对象
+                        webSocketClient.close();
+                        webSocketClient = null;
+                        URI_TOKEN = "";
+                        //3.重新连接服务器
+                        executorService.execute(new WebSocketConnect());
+                    }
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }
+
+        @Override
+        public void onError(Throwable ex, boolean isOnCallback) {
+
+        }
+
+        @Override
+        public void onCancelled(CancelledException cex) {
+
+        }
+
+        @Override
+        public void onFinished() {
+
+        }
+    };
 
     @Override
     public void onDestroy() {
         super.onDestroy();
         webSocketClient.close();
         webSocketClient = null;
+        URI_TOKEN = "";
+        ToastUtil.showToast(this, "WebSocketService停止了！", true);
+        //如果是异常停止则需要重启服务
+        if (new SharedPreferenceUtil(getApplicationContext(), SpfConstants.SPF_NAME).getBoolean(SpfConstants.KEY_IS_LOGIN, false)) {
+            Intent intent = new Intent(getApplication(), WebSocketService.class);
+            getApplication().startService(intent);
+        }
     }
 }

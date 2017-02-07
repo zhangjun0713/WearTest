@@ -1,25 +1,22 @@
 package com.ycsoft.wear.ui.dialog;
 
 import android.content.Context;
-import android.os.Handler;
-import android.os.Message;
 import android.os.Vibrator;
-import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
 import com.ycsoft.wear.R;
 import com.ycsoft.wear.common.Constants;
+import com.ycsoft.wear.common.SocketConstants;
 import com.ycsoft.wear.common.SpfConstants;
+import com.ycsoft.wear.service.WebSocketService;
 import com.ycsoft.wear.ui.BaseDialog;
 import com.ycsoft.wear.util.SharedPreferenceUtil;
 import com.ycsoft.wear.util.ToastUtil;
 
+import org.java_websocket.client.WebSocketClient;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.xutils.common.Callback;
-import org.xutils.http.RequestParams;
-import org.xutils.x;
 
 import butterknife.BindView;
 import butterknife.OnClick;
@@ -57,65 +54,29 @@ public class ResponseServiceDialog extends BaseDialog {
     void onClick(View view) {
         switch (view.getId()) {
             case R.id.btn_negative:
-                stopVibrator();
-                clearRoomInfo();
-                dismiss();
+                cancelPressed();
                 break;
             case R.id.btn_positive:
                 stopVibrator();
                 ToastUtil.showToast(getContext(), "等待机服务器应答", true);
-                RequestParams params = new RequestParams(Constants.SERVER_IP + Constants.API_ACCEPT_SERVICE);
-                params.setCharset("UTF-8");
-                params.addBodyParameter(SpfConstants.KEY_ID, mSharedPreferenceUtil.getString(SpfConstants.KEY_ID, ""));
-                params.addBodyParameter(SpfConstants.KEY_NAME, mSharedPreferenceUtil.getString(SpfConstants.KEY_NAME, ""));
-                params.addBodyParameter(SpfConstants.KEY_ROOM_NUMBER, mSharedPreferenceUtil.getString(SpfConstants.KEY_ROOM_NUMBER, ""));
-                x.http().get(params, new Callback.CommonCallback<String>() {
-                    @Override
-                    public void onSuccess(String result) {
-                        try {
-                            JSONObject jsonObject = new JSONObject(result);
-                            mHandler.obtainMessage(1, jsonObject.getBoolean("result")).sendToTarget();
-                            dismiss();
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                        }
+                try {
+                    JSONObject jsonObject = new JSONObject();
+                    jsonObject.put("action", SocketConstants.ACTION_ACCEPT_SERVICE);
+                    jsonObject.put(SpfConstants.KEY_ID, mSharedPreferenceUtil.getString(SpfConstants.KEY_ID, ""));
+                    jsonObject.put(SpfConstants.KEY_NAME, mSharedPreferenceUtil.getString(SpfConstants.KEY_NAME, ""));
+                    jsonObject.put(SpfConstants.KEY_ROOM_NUMBER, mSharedPreferenceUtil.getString(SpfConstants.KEY_ROOM_NUMBER, ""));
+                    WebSocketClient mWebSocketClient = WebSocketService.getWebSocketClient();
+                    if (Constants.isConnectedServer) {
+                        if (mWebSocketClient != null)
+                            mWebSocketClient.send(jsonObject.toString());
+                    } else {
+                        ToastUtil.showToast(getContext(), "已经与服务器断开连接！", true);
                     }
-
-                    @Override
-                    public void onError(Throwable ex, boolean isOnCallback) {
-
-                    }
-
-                    @Override
-                    public void onCancelled(CancelledException cex) {
-
-                    }
-
-                    @Override
-                    public void onFinished() {
-
-                    }
-                });
-                break;
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
         }
     }
-
-    private Handler mHandler = new Handler() {
-        @Override
-        public void handleMessage(Message msg) {
-            switch (msg.what) {
-                case 1:
-                    Log.d(TAG, "RECEIVED result = " + msg.obj);
-                    if (!(boolean) msg.obj) {
-                        mSharedPreferenceUtil.removeKey(SpfConstants.KEY_ROOM_NUMBER);
-                        ToastUtil.showToast(getContext(), "已经有其他服务员先确定了服务！", true);
-                    }
-                    mSharedPreferenceUtil.removeKey(SpfConstants.KEY_NEED_VIBRATE);
-                    dismiss();
-                    break;
-            }
-        }
-    };
 
     @Override
     public void show(int width, int height) {
@@ -150,17 +111,19 @@ public class ResponseServiceDialog extends BaseDialog {
     private void stopVibrator() {
         if (mVibrator != null)
             mVibrator.cancel();
-    }
-
-    @Override
-    public void dismiss() {
-        stopVibrator();
-        super.dismiss();
+        mSharedPreferenceUtil.removeKey(SpfConstants.KEY_NEED_VIBRATE);
     }
 
     @Override
     public void onBackPressed() {
         //按返回键则相当于点击了取消
+        cancelPressed();
+    }
+
+    /**
+     * 点击了取消按钮
+     */
+    private void cancelPressed() {
         stopVibrator();
         clearRoomInfo();
         dismiss();
@@ -170,9 +133,6 @@ public class ResponseServiceDialog extends BaseDialog {
      * 清除存入配置文件中的房间呼叫相关信息
      */
     private void clearRoomInfo() {
-        //1.清除房间号
         mSharedPreferenceUtil.removeKey(SpfConstants.KEY_ROOM_NUMBER);
-        //2.清除震动提醒
-        mSharedPreferenceUtil.removeKey(SpfConstants.KEY_NEED_VIBRATE);
     }
 }

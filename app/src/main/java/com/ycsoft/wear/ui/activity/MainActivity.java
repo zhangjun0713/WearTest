@@ -23,9 +23,12 @@ import com.ycsoft.wear.ui.BaseActivity;
 import com.ycsoft.wear.ui.dialog.ResponseServiceDialog;
 import com.ycsoft.wear.util.SharedPreferenceUtil;
 import com.ycsoft.wear.util.ToastUtil;
+import com.ycsoft.wear.util.ToolUtil;
 
+import org.java_websocket.client.WebSocketClient;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.xutils.common.Callback;
 
 import butterknife.BindString;
 import butterknife.BindView;
@@ -59,6 +62,11 @@ public class MainActivity extends BaseActivity {
      * 初始化广播接收器
      */
     private void initReceiver() {
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(Constants.BC_SHOW_CALL_SERVICE_DIALOG);
+        intentFilter.addAction(Constants.BC_CANCEL_SERVICE_DIALOG);
+        intentFilter.addAction(Constants.BC_FINISHED_SERVICE_SUCCEED);
+        intentFilter.addAction(Constants.BC_ACCEPT_SERVICE_SUCCEED);
         mReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
@@ -67,7 +75,7 @@ public class MainActivity extends BaseActivity {
                         //显示呼叫服务对话框
                         showServiceDialog(mSharedPreferenceUtil.getString(SpfConstants.KEY_ROOM_NUMBER, ""));
                         break;
-                    case Constants.BC_SHOW_CANCEL_SERVICE_DIALOG:
+                    case Constants.BC_CANCEL_SERVICE_DIALOG:
                         //取消呼叫服务对话框
                         if (dialog != null && dialog.isShowing()) {
                             dialog.dismiss();
@@ -79,24 +87,40 @@ public class MainActivity extends BaseActivity {
                         tvInfo.setText("");
                         btnFinishedService.setVisibility(View.GONE);
                         break;
+                    case Constants.BC_ACCEPT_SERVICE_SUCCEED:
+                        //接受服务成功
+                        if (dialog.isShowing()) {
+                            dialog.dismiss();
+                        }
+                        if (intent.getBooleanExtra("result", false)) {
+                            ToastUtil.showToast(getApplicationContext(), "请尽快去\n" + mSharedPreferenceUtil
+                                    .getString(SpfConstants.KEY_ROOM_NUMBER, "") + "\n服务！", true);
+                            tvInfo.setText("请尽快到客户房间\n" + mSharedPreferenceUtil.getString(SpfConstants.KEY_ROOM_NUMBER, ""));
+                            btnFinishedService.setVisibility(View.VISIBLE);
+                        } else {
+                            ToastUtil.showToast(getApplicationContext(), "已经有其他服务业先接受了服务请求！", true);
+                        }
+                        break;
                 }
             }
         };
-        IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(Constants.BC_SHOW_CALL_SERVICE_DIALOG);
-        intentFilter.addAction(Constants.BC_SHOW_CANCEL_SERVICE_DIALOG);
-        intentFilter.addAction(Constants.BC_FINISHED_SERVICE_SUCCEED);
         registerReceiver(mReceiver, intentFilter);
     }
 
     @Override
     protected void initView() {
         if (mSharedPreferenceUtil.getBoolean(SpfConstants.KEY_IS_LOGIN, false)) {
+            //之前已登录
+            if (!Constants.isConnectedServer) {
+                //程序退出后再进入时需要重新登录
+                login();
+            }
             tvStaffName.setText(mSharedPreferenceUtil.getString(SpfConstants.KEY_NAME, ""));
             if (!mSharedPreferenceUtil.getString(SpfConstants.KEY_ROOM_NUMBER, "").equals("")) {
                 btnFinishedService.setVisibility(View.VISIBLE);
             }
         } else {
+            //之前未登录
             goLoginPage();
             finish();
         }
@@ -108,6 +132,53 @@ public class MainActivity extends BaseActivity {
                 tvInfo.setText("请尽快到客户房间\n" + mSharedPreferenceUtil.getString(SpfConstants.KEY_ROOM_NUMBER, ""));
             }
         }
+    }
+
+    /**
+     * 后台执行登录过程
+     */
+    private void login() {
+        Callback.CommonCallback<String> callback = new Callback.CommonCallback<String>() {
+            @Override
+            public void onSuccess(String result) {
+                try {
+                    JSONObject jsonObject = new JSONObject(result);
+                    if (jsonObject.getBoolean("Result")) {
+                        //1.登录成功，获取Token
+                        String token = jsonObject.getString("Token");
+                        WebSocketService.URI_TOKEN = "token=" + token;
+                        //2.启动WebSocketService，启动后自动去连接上服务器
+                        if (!ToolUtil.isServiceLive(getApplicationContext(), WebSocketService.class.getName())) {
+                            Intent intent = new Intent(getApplicationContext(), WebSocketService.class);
+                            startService(intent);
+                        }
+                    } else {
+                        //登录失败
+                        ToastUtil.showToast(getApplicationContext(), "登录失败，请重试！", true);
+                        mSharedPreferenceUtil.removeKey(SpfConstants.KEY_ID);
+                        mSharedPreferenceUtil.removeKey(SpfConstants.KEY_PWD);
+                        mSharedPreferenceUtil.removeKey(SpfConstants.KEY_FLOOR);
+                    }
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            @Override
+            public void onError(Throwable ex, boolean isOnCallback) {
+                ex.printStackTrace();
+            }
+
+            @Override
+            public void onCancelled(CancelledException cex) {
+                cex.printStackTrace();
+            }
+
+            @Override
+            public void onFinished() {
+            }
+        };
+        ToolUtil.getToken(this, callback);
     }
 
     @Override
@@ -195,9 +266,23 @@ public class MainActivity extends BaseActivity {
                 //跳转到登录界面
                 goLoginPage();
                 finish();
+                //清除本地登录信息
+                clearLoginInfo();
             }
         });
         builder.show();
+    }
+
+    /**
+     * 清除登录信息
+     */
+    private void clearLoginInfo() {
+        mSharedPreferenceUtil.removeKey(SpfConstants.KEY_ID);
+        mSharedPreferenceUtil.removeKey(SpfConstants.KEY_NAME);
+        mSharedPreferenceUtil.removeKey(SpfConstants.KEY_FLOOR);
+        mSharedPreferenceUtil.removeKey(SpfConstants.KEY_IS_LOGIN);
+        mSharedPreferenceUtil.removeKey(SpfConstants.KEY_ROOM_NUMBER);
+        mSharedPreferenceUtil.removeKey(SpfConstants.KEY_NEED_VIBRATE);
     }
 
     /**
@@ -209,19 +294,11 @@ public class MainActivity extends BaseActivity {
         public void handleMessage(Message msg) {
             switch (msg.what) {
                 case LOGOUT:
-                    if (WebSocketService.getWebSocketClient() != null) {
-                        try {
-                            JSONObject jsonObject = new JSONObject();
-                            jsonObject.put("action", SocketConstants.ACTION_LOGOUT);
-                            jsonObject.put(SpfConstants.KEY_ID, mSharedPreferenceUtil
-                                    .getString(SpfConstants.KEY_ID, ""));
-                            jsonObject.put(SpfConstants.KEY_NAME, mSharedPreferenceUtil
-                                    .getString(SpfConstants.KEY_NAME, ""));
-                            WebSocketService.getWebSocketClient().send(jsonObject.toString());
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                        }
-                    }
+                    WebSocketClient client = WebSocketService.getWebSocketClient();
+                    if (client != null)
+                        client.close();
+                    Intent intent = new Intent(MainActivity.this, WebSocketService.class);
+                    stopService(intent);
                     break;
             }
         }

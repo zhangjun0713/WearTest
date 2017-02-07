@@ -57,7 +57,7 @@ public class SplashActivity extends BaseActivity {
             public void onReceive(Context context, Intent intent) {
                 ivRegister.setBackgroundResource(R.drawable.icon_connect_server);
                 btnConnectServer.setVisibility(View.GONE);
-                ToastUtil.showToast(getApplicationContext(), "连接服务器成功！", true);
+                ToastUtil.showToast(getApplicationContext(), "已发现开启的服务器！", true);
                 goMainActivity();
             }
         };

@@ -1,9 +1,6 @@
 package com.ycsoft.wear.ui.activity;
 
-import android.content.BroadcastReceiver;
-import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.text.TextUtils;
 import android.view.View;
 import android.widget.EditText;
@@ -14,10 +11,12 @@ import com.ycsoft.wear.common.SpfConstants;
 import com.ycsoft.wear.service.WebSocketService;
 import com.ycsoft.wear.ui.BaseActivity;
 import com.ycsoft.wear.util.SharedPreferenceUtil;
+import com.ycsoft.wear.util.ToastUtil;
+import com.ycsoft.wear.util.ToolUtil;
 
-import org.java_websocket.client.WebSocketClient;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.xutils.common.Callback;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -29,10 +28,6 @@ import butterknife.OnClick;
  */
 
 public class LoginActivity extends BaseActivity {
-    /**
-     * 广播通知登录结果
-     */
-    public static final String BC_LOGIN_RESULT = "bc_login_result";
     @BindView(R.id.et_name)
     EditText etName;
     @BindView(R.id.et_floor)
@@ -46,28 +41,14 @@ public class LoginActivity extends BaseActivity {
         setContentView(R.layout.activity_login);
         ButterKnife.bind(this);
         mSharedPreferenceUtil = new SharedPreferenceUtil(this, SpfConstants.SPF_NAME);
-        initReceiver();
     }
 
     /**
-     * 初始化广播接收器
+     * 跳到主页
      */
-    private void initReceiver() {
-        IntentFilter filter = new IntentFilter(BC_LOGIN_RESULT);
-        BroadcastReceiver mReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                if (intent.getBooleanExtra("result", false)) {
-                    //登录成功，提示
-                    Toast.makeText(getApplication(), "登录成功！", Toast.LENGTH_SHORT).show();
-                    finish();
-                } else {
-                    //登录失败，提示
-                    Toast.makeText(getApplication(), "登录失败！请重试！", Toast.LENGTH_SHORT).show();
-                }
-            }
-        };
-        registerReceiver(mReceiver, filter);
+    private void goMainActivity() {
+        Intent intent = new Intent(this, MainActivity.class);
+        startActivity(intent);
     }
 
     @Override
@@ -96,22 +77,60 @@ public class LoginActivity extends BaseActivity {
         name = etName.getText().toString().trim();
         floor = etFloor.getText().toString().trim();
         password = etPassword.getText().toString().trim();
-        login(name, floor, password);
+        mSharedPreferenceUtil.setValue(SpfConstants.KEY_ID, name);
+        mSharedPreferenceUtil.setValue(SpfConstants.KEY_PWD, password);
+        mSharedPreferenceUtil.setValue(SpfConstants.KEY_FLOOR, floor);
+        login();
     }
 
-    private void login(final String name, final String floor, String password) {
-        try {
-            JSONObject jsonObject = new JSONObject();
-            jsonObject.put(SpfConstants.KEY_ID, name);
-            jsonObject.put(SpfConstants.KEY_FLOOR, floor);
-            jsonObject.put(SpfConstants.KEY_PWD, password);
-            mSharedPreferenceUtil.setValue(SpfConstants.KEY_PWD, password);
-            WebSocketClient mWebSocketClient = WebSocketService.getWebSocketClient();
-            if (mWebSocketClient != null) {
-                mWebSocketClient.send(jsonObject.toString());
+    private void login() {
+        //调HTTP接口登录
+        Callback.CommonCallback<String> callback = new Callback.CommonCallback<String>() {
+            @Override
+            public void onSuccess(String result) {
+                try {
+                    JSONObject jsonObject = new JSONObject(result);
+                    if (jsonObject.getBoolean("Result")) {
+                        //1.存储帐号和密码
+                        mSharedPreferenceUtil.setValue(SpfConstants.KEY_IS_LOGIN, true);
+                        mSharedPreferenceUtil.setValue(SpfConstants.KEY_NAME, jsonObject.getString("Name"));
+                        //2.登录成功，获取Token
+                        String token = jsonObject.getString("Token");
+                        WebSocketService.URI_TOKEN = "token=" + token;
+                        //3.启动WebSocketService，启动后自动去连接上服务器
+                        if (!ToolUtil.isServiceLive(getApplicationContext(), WebSocketService.class.getName())) {
+                            Intent intent = new Intent(getApplicationContext(), WebSocketService.class);
+                            startService(intent);
+                        }
+                        //4.跳转到主界面
+                        finish();
+                        goMainActivity();
+                    } else {
+                        //登录失败
+                        ToastUtil.showToast(getApplicationContext(), "登录失败，请重试！", true);
+                        mSharedPreferenceUtil.removeKey(SpfConstants.KEY_ID);
+                        mSharedPreferenceUtil.removeKey(SpfConstants.KEY_PWD);
+                        mSharedPreferenceUtil.removeKey(SpfConstants.KEY_FLOOR);
+                    }
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
             }
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
+
+            @Override
+            public void onError(Throwable ex, boolean isOnCallback) {
+                ex.printStackTrace();
+            }
+
+            @Override
+            public void onCancelled(CancelledException cex) {
+                cex.printStackTrace();
+            }
+
+            @Override
+            public void onFinished() {
+            }
+        };
+        ToolUtil.getToken(this, callback);
     }
 }

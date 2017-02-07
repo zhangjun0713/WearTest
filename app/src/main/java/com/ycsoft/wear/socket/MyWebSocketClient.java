@@ -1,20 +1,18 @@
 package com.ycsoft.wear.socket;
 
-import android.app.KeyguardManager;
-import android.app.Notification;
-import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Handler;
 import android.os.PowerManager;
 import android.util.Log;
 
-import com.ycsoft.wear.R;
+import com.ycsoft.wear.common.Constants;
 import com.ycsoft.wear.common.SocketConstants;
 import com.ycsoft.wear.common.SpfConstants;
 import com.ycsoft.wear.service.WebSocketService;
 import com.ycsoft.wear.ui.activity.LoginActivity;
 import com.ycsoft.wear.util.SharedPreferenceUtil;
+import com.ycsoft.wear.util.ToastUtil;
 
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.drafts.Draft;
@@ -26,10 +24,6 @@ import org.json.JSONObject;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
-
-import static android.content.Context.KEYGUARD_SERVICE;
-import static android.content.Context.POWER_SERVICE;
-import static android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON;
 
 /**
  * Created by zhangjun on 2017/1/21.
@@ -52,15 +46,16 @@ public class MyWebSocketClient extends WebSocketClient {
     }
 
     public MyWebSocketClient(Context context, Handler handler, URI serverUri, Draft draft,
-                             Map<String, String> headers, int connecttimeout) {
-        super(serverUri, draft, headers, connecttimeout);
+                             Map<String, String> headers, int connectTimeout) {
+        super(serverUri, draft, headers, connectTimeout);
         this.mSharedPreferenceUtil = new SharedPreferenceUtil(context, SpfConstants.SPF_NAME);
         this.mHandler = handler;
         this.mContext = context;
     }
 
     @Override
-    public void onOpen(ServerHandshake handshakedata) {
+    public void onOpen(ServerHandshake handshakeData) {
+        mReConnectedCount = 0;
         Log.d(TAG, "onOpen: WebSocket连接打开了！");
     }
 
@@ -70,14 +65,6 @@ public class MyWebSocketClient extends WebSocketClient {
         try {
             JSONObject jsonObject = new JSONObject(message);
             switch (jsonObject.getString("action")) {
-                case SocketConstants.ACTION_LOGIN:
-                    //登录，连接服务器
-                    handleLoginResult(jsonObject);
-                    break;
-                case SocketConstants.ACTION_LOGOUT:
-                    //跳入登录界面
-                    mHandler.obtainMessage(WebSocketService.GO_TO_LOGIN).sendToTarget();
-                    break;
                 case SocketConstants.ACTION_CALL_SERVICE:
                     //收到呼叫服务请求
                     callService(jsonObject);
@@ -103,32 +90,6 @@ public class MyWebSocketClient extends WebSocketClient {
     }
 
     /**
-     * 处理登录结果
-     *
-     * @param jsonObject
-     * @throws JSONException
-     */
-    private void handleLoginResult(JSONObject jsonObject) throws JSONException {
-        if (jsonObject.getBoolean("result")) {
-            //登录成功
-            mSharedPreferenceUtil.setValue(SpfConstants.KEY_IS_LOGIN, true);
-            mSharedPreferenceUtil.setValue(SpfConstants.KEY_ID,
-                    jsonObject.getString(SpfConstants.KEY_ID));
-            mSharedPreferenceUtil.setValue(SpfConstants.KEY_NAME,
-                    jsonObject.getString(SpfConstants.KEY_NAME));
-            mSharedPreferenceUtil.setValue(SpfConstants.KEY_FLOOR,
-                    jsonObject.getString(SpfConstants.KEY_FLOOR));
-        } else {
-            //登录失败，删除存入配置文件的密码
-            mSharedPreferenceUtil.removeKey(SpfConstants.KEY_PWD);
-        }
-        //广播通知登录结果
-        Intent intent = new Intent(LoginActivity.BC_LOGIN_RESULT);
-        intent.putExtra("result", jsonObject.getBoolean("result"));
-        mContext.sendBroadcast(intent);
-    }
-
-    /**
      * 呼叫服务
      *
      * @param jsonObject
@@ -139,6 +100,7 @@ public class MyWebSocketClient extends WebSocketClient {
         String floor = jsonObject.getString(SpfConstants.KEY_FLOOR);
         if (floor.equals(mSharedPreferenceUtil.getString(SpfConstants.KEY_FLOOR, ""))
                 && mSharedPreferenceUtil.getString(SpfConstants.KEY_ROOM_NUMBER, "").equals("")) {
+            //如果楼层和登录楼层相同，切没有正在服务的房间号则提醒服务员
             mSharedPreferenceUtil.setValue(SpfConstants.KEY_ROOM_NUMBER, roomNumber);
             mSharedPreferenceUtil.setValue(SpfConstants.KEY_NEED_VIBRATE, true);
             if (!isScreenOn()) {
@@ -150,6 +112,8 @@ public class MyWebSocketClient extends WebSocketClient {
 
     @Override
     public void onClose(int code, String reason, boolean remote) {
+        Constants.isConnectedServer = false;
+        ToastUtil.showToast(mContext, "WebSocket连接中断了！", true);
         Log.d(TAG, "onClose: \ncode=" + code + "\nreason=" + reason + "\nremote=" + remote);
         if (remote) {
             //服务器端主动断开了连接
@@ -167,12 +131,13 @@ public class MyWebSocketClient extends WebSocketClient {
 
     @Override
     public void onError(Exception ex) {
-        ex.printStackTrace();
-        Log.d(TAG, "onError: " + ex.getMessage());
+        Constants.isConnectedServer = false;
         mReConnectedCount++;
         if (mReConnectedCount <= 3) {
             mHandler.obtainMessage(WebSocketService.RE_CONNECT_SERVER).sendToTarget();
         }
+        ex.printStackTrace();
+        Log.d(TAG, "onError: " + ex.getMessage());
     }
 
     /**
@@ -181,52 +146,22 @@ public class MyWebSocketClient extends WebSocketClient {
      * @return
      */
     public boolean isScreenOn() {
-        PowerManager pm = (PowerManager) mContext.getSystemService(POWER_SERVICE);
+        PowerManager pm = (PowerManager) mContext.getSystemService(Context.POWER_SERVICE);
         if (pm.isScreenOn()) {
             return true;
         }
         return false;
     }
 
+    private static final String WAKE_TAG = "wake_tag";
+
     /**
      * 唤醒屏幕
      */
     private void wakeUpScreen() {
         PowerManager.WakeLock mWakelock;
-        PowerManager pm = (PowerManager) mContext.getSystemService(POWER_SERVICE);
-        mWakelock = pm.newWakeLock(PowerManager.ACQUIRE_CAUSES_WAKEUP | FLAG_KEEP_SCREEN_ON, "SimpleTimer");
+        PowerManager pm = (PowerManager) mContext.getSystemService(Context.POWER_SERVICE);
+        mWakelock = pm.newWakeLock(PowerManager.FULL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP, WAKE_TAG);
         mWakelock.acquire();
-        if (isLockedScreen()) {
-            showNotification();
-        }
-    }
-
-    /**
-     * 判断屏幕是否锁屏状态
-     *
-     * @return
-     */
-    private boolean isLockedScreen() {
-        KeyguardManager mKeyguardManager = (KeyguardManager) mContext.getSystemService(KEYGUARD_SERVICE);
-        return !mKeyguardManager.inKeyguardRestrictedInputMode();
-    }
-
-    /**
-     * 显示提醒
-     */
-    private void showNotification() {
-        NotificationManager notificationManager = (NotificationManager)
-                mContext.getSystemService(Context.NOTIFICATION_SERVICE);
-        Notification notification = new Notification.Builder(mContext)
-                .setSmallIcon(R.mipmap.ic_launcher)
-                .setTicker(mSharedPreferenceUtil.getString(SpfConstants.KEY_ROOM_NUMBER, "")
-                        + " 客户正在呼叫服务！")
-                .setAutoCancel(true)
-                .setWhen(System.currentTimeMillis())
-                .setContentTitle("呼叫服务")
-                .setContentText(mSharedPreferenceUtil.getString(SpfConstants.KEY_ROOM_NUMBER, "")
-                        + " 客户正在呼叫服务！")
-                .getNotification();
-        notificationManager.notify(1, notification);
     }
 }

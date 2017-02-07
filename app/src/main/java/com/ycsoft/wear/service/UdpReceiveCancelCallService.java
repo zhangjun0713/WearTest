@@ -94,7 +94,7 @@ public class UdpReceiveCancelCallService extends Service {
                 case CANCEL_CALL:
                     sharedPreferenceUtil.removeKey(SpfConstants.KEY_ROOM_NUMBER);
                     sharedPreferenceUtil.removeKey(SpfConstants.KEY_NEED_VIBRATE);
-                    Intent intent = new Intent(Constants.BC_SHOW_CANCEL_SERVICE_DIALOG);
+                    Intent intent = new Intent(Constants.BC_CANCEL_SERVICE_DIALOG);
                     intent.putExtra("info", (String) msg.obj);
                     sendBroadcast(intent);
                     break;

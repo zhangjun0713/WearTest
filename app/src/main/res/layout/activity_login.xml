@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/activity_main"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:paddingBottom="@dimen/activity_vertical_margin"
-    android:paddingLeft="@dimen/activity_horizontal_margin"
-    android:paddingRight="@dimen/activity_horizontal_margin"
-    android:paddingTop="@dimen/activity_vertical_margin"
-    tools:context="com.ycsoft.wear.ui.activity.MainActivity">
+                xmlns:tools="http://schemas.android.com/tools"
+                android:id="@+id/activity_main"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:paddingBottom="@dimen/activity_vertical_margin"
+                android:paddingLeft="@dimen/activity_horizontal_margin"
+                android:paddingRight="@dimen/activity_horizontal_margin"
+                android:paddingTop="@dimen/activity_vertical_margin"
+                tools:context="com.ycsoft.wear.ui.activity.MainActivity">
 
     <LinearLayout
         android:layout_width="240dp"
@@ -24,8 +24,8 @@
             android:layout_centerInParent="true"
             android:layout_gravity="center_horizontal"
             android:layout_marginTop="10dp"
-            android:textColor="@color/colorAccent"
-            android:text="欢迎使用服务员手表客户端" />
+            android:text="欢迎使用服务员手表客户端"
+            android:textColor="@color/colorAccent"/>
 
         <EditText
             android:id="@+id/et_name"
@@ -34,9 +34,10 @@
             android:layout_marginTop="15dp"
             android:background="@drawable/et_bg_selector"
             android:hint="服务员姓名或编号"
+            android:inputType="text"
             android:lines="1"
             android:paddingEnd="10dp"
-            android:paddingStart="10dp" />
+            android:paddingStart="10dp"/>
 
         <EditText
             android:id="@+id/et_floor"
@@ -44,11 +45,11 @@
             android:layout_height="30dp"
             android:layout_marginTop="10dp"
             android:background="@drawable/et_bg_selector"
-            android:hint="您服务楼层"
-            android:inputType="number"
+            android:hint="您服务区域"
+            android:inputType="text"
             android:lines="1"
             android:paddingEnd="10dp"
-            android:paddingStart="10dp" />
+            android:paddingStart="10dp"/>
 
         <EditText
             android:id="@+id/et_password"
@@ -60,7 +61,7 @@
             android:inputType="textPassword"
             android:lines="1"
             android:paddingEnd="10dp"
-            android:paddingStart="10dp" />
+            android:paddingStart="10dp"/>
 
         <Button
             android:id="@+id/btn_login"
@@ -68,7 +69,7 @@
             android:layout_height="50dp"
             android:layout_marginTop="15dp"
             android:background="@android:color/darker_gray"
-            android:text="登录" />
+            android:text="登录"/>
     </LinearLayout>
 
 </RelativeLayout>

@@ -2,6 +2,17 @@ package com.ycsoft.wear.util;
 
 import android.app.ActivityManager;
 import android.content.Context;
+import android.content.Intent;
+
+import com.ycsoft.wear.common.Constants;
+import com.ycsoft.wear.common.SpfConstants;
+import com.ycsoft.wear.service.WebSocketService;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.xutils.common.Callback;
+import org.xutils.http.RequestParams;
+import org.xutils.x;
 
 import java.util.ArrayList;
 import java.util.regex.Matcher;
@@ -60,5 +71,20 @@ public class ToolUtil {
             }
         }
         return false;
+    }
+
+    /**
+     * 获取认证Token
+     *
+     * @param context
+     * @param callback
+     */
+    public static void getToken(Context context, Callback.CommonCallback<String> callback) {
+        SharedPreferenceUtil mSharedPreferenceUtil = new SharedPreferenceUtil(context, SpfConstants.SPF_NAME);
+        RequestParams params = new RequestParams("http://" + Constants.SERVER_IP + "/api/waiter");
+        params.setCharset("UTF-8");
+        params.addParameter(SpfConstants.KEY_ID, mSharedPreferenceUtil.getString(SpfConstants.KEY_ID, ""));
+        params.addParameter(SpfConstants.KEY_PWD, mSharedPreferenceUtil.getString(SpfConstants.KEY_PWD, ""));
+        x.http().get(params, callback);
     }
 }
