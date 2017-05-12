@@ -20,6 +20,7 @@ import org.xutils.common.Callback;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import butterknife.OnCheckedChanged;
 import butterknife.OnClick;
 
 /**
@@ -30,8 +31,6 @@ import butterknife.OnClick;
 public class LoginActivity extends BaseActivity {
     @BindView(R.id.et_name)
     EditText etName;
-    @BindView(R.id.et_floor)
-    EditText etFloor;
     @BindView(R.id.et_password)
     EditText etPassword;
     private SharedPreferenceUtil mSharedPreferenceUtil;
@@ -65,22 +64,25 @@ public class LoginActivity extends BaseActivity {
             Toast.makeText(this, "请输入服务员姓名或编号", Toast.LENGTH_SHORT).show();
             return;
         }
-        if (TextUtils.isEmpty(etFloor.getText().toString())) {
-            Toast.makeText(this, "请输入您服务楼层", Toast.LENGTH_SHORT).show();
-            return;
-        }
         if (TextUtils.isEmpty(etPassword.getText().toString())) {
             Toast.makeText(this, "请输入密码", Toast.LENGTH_SHORT).show();
             return;
         }
         String name, floor, password;
         name = etName.getText().toString().trim();
-        floor = etFloor.getText().toString().trim();
+        floor = "测试";
         password = etPassword.getText().toString().trim();
         mSharedPreferenceUtil.setValue(SpfConstants.KEY_ID, name);
         mSharedPreferenceUtil.setValue(SpfConstants.KEY_PWD, password);
         mSharedPreferenceUtil.setValue(SpfConstants.KEY_FLOOR, floor);
         login();
+    }
+
+    @OnCheckedChanged(R.id.cb_remember_password)
+    void onCheckedChanged(boolean checked) {
+        if (checked) {
+            //记住密码
+        }
     }
 
     private void login() {

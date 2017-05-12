@@ -1,21 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent">
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
 
     <RelativeLayout
         android:layout_width="240dp"
         android:layout_height="240dp"
         android:layout_centerInParent="true"
-        android:background="@drawable/et_bg_selector"
-        android:padding="10dp">
+        android:background="@drawable/bg_selector">
+
+        <include layout="@layout/layout_top" />
 
         <ImageView
             android:id="@+id/iv_register"
             android:layout_width="32dp"
             android:layout_height="32dp"
             android:layout_centerInParent="true"
-            android:src="@drawable/icon_disconnect_server"/>
+            android:src="@drawable/icon_disconnect_server" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -24,16 +25,20 @@
             android:layout_centerHorizontal="true"
             android:layout_marginBottom="20dp"
             android:text="服务器连接状态"
-            android:textSize="12sp"/>
+            android:textSize="12sp" />
 
         <Button
             android:id="@+id/btn_connect_server"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_width="150dp"
+            android:layout_height="26dp"
             android:layout_alignParentBottom="true"
+            android:layout_centerHorizontal="true"
+            android:layout_marginBottom="30dp"
+            android:background="@drawable/bg_button_selector"
             android:gravity="center"
             android:minHeight="30dp"
             android:text="连接服务器"
-            android:textSize="12sp"/>
+            android:textColor="@color/colorWhite"
+            android:textSize="14sp" />
     </RelativeLayout>
 </RelativeLayout>

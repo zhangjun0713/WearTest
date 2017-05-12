@@ -15,8 +15,11 @@
         android:layout_width="240dp"
         android:layout_height="240dp"
         android:layout_centerInParent="true"
-        android:background="@drawable/et_bg_selector"
-        android:padding="10dp">
+        android:background="@drawable/et_bg_selector">
+
+        <include
+            android:id="@+id/include_top"
+            layout="@layout/layout_top" />
 
         <TextView
             android:id="@+id/tv_staff_name"
@@ -31,26 +34,33 @@
             android:layout_height="30dp"
             android:layout_alignParentEnd="true"
             android:layout_alignParentRight="true"
+            android:layout_marginTop="10dp"
             android:background="@drawable/icon_logout"
             android:gravity="center" />
 
         <TextView
             android:id="@+id/tv_info"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
             android:gravity="center"
             android:hint="没有客户呼叫服务"
+            android:padding="10dp"
             android:textColor="@android:color/black"
             android:textColorHint="@android:color/black" />
 
         <Button
             android:id="@+id/btn_finished_service"
-            android:layout_width="match_parent"
-            android:layout_height="50dp"
+            android:layout_width="150dp"
+            android:layout_height="26dp"
             android:layout_alignParentBottom="true"
+            android:layout_centerHorizontal="true"
+            android:layout_marginBottom="30dp"
+            android:background="@drawable/bg_button_selector"
             android:gravity="center"
             android:text="服务完成"
+            android:textColor="@color/colorWhite"
+            android:textSize="14sp"
             android:visibility="gone" />
     </RelativeLayout>
-
 </RelativeLayout>
