@@ -39,4 +39,6 @@ public class SpfConstants {
      * 呼叫服务的房间号
      */
     public static final String KEY_ROOM_NUMBER = "clientName";
+    public static final String KEY_SAVE_ID = "save_id";
+    public static final String KEY_SAVE_PWD = "save_pwd";
 }

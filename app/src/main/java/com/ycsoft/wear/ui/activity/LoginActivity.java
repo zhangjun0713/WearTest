@@ -3,6 +3,7 @@ package com.ycsoft.wear.ui.activity;
 import android.content.Intent;
 import android.text.TextUtils;
 import android.view.View;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.Toast;
 
@@ -20,7 +21,6 @@ import org.xutils.common.Callback;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
-import butterknife.OnCheckedChanged;
 import butterknife.OnClick;
 
 /**
@@ -33,6 +33,8 @@ public class LoginActivity extends BaseActivity {
     EditText etName;
     @BindView(R.id.et_password)
     EditText etPassword;
+    @BindView(R.id.cb_remember_password)
+    CheckBox cbRememberPassword;
     private SharedPreferenceUtil mSharedPreferenceUtil;
 
     @Override
@@ -52,6 +54,12 @@ public class LoginActivity extends BaseActivity {
 
     @Override
     protected void initView() {
+        String id = mSharedPreferenceUtil.getString(SpfConstants.KEY_SAVE_ID, "");
+        String pwd = mSharedPreferenceUtil.getString(SpfConstants.KEY_SAVE_PWD, "");
+        if (!id.equals("") && !pwd.equals("")) {
+            etName.setText(id);
+            etPassword.setText(pwd);
+        }
     }
 
     @Override
@@ -75,14 +83,15 @@ public class LoginActivity extends BaseActivity {
         mSharedPreferenceUtil.setValue(SpfConstants.KEY_ID, name);
         mSharedPreferenceUtil.setValue(SpfConstants.KEY_PWD, password);
         mSharedPreferenceUtil.setValue(SpfConstants.KEY_FLOOR, floor);
-        login();
-    }
-
-    @OnCheckedChanged(R.id.cb_remember_password)
-    void onCheckedChanged(boolean checked) {
-        if (checked) {
-            //记住密码
+        if (cbRememberPassword.isChecked()) {
+            //存储登录名和密码
+            mSharedPreferenceUtil.setValue(SpfConstants.KEY_SAVE_ID, name);
+            mSharedPreferenceUtil.setValue(SpfConstants.KEY_SAVE_PWD, password);
+        } else {
+            mSharedPreferenceUtil.removeKey(SpfConstants.KEY_SAVE_ID);
+            mSharedPreferenceUtil.removeKey(SpfConstants.KEY_SAVE_PWD);
         }
+        login();
     }
 
     private void login() {
@@ -93,7 +102,7 @@ public class LoginActivity extends BaseActivity {
                 try {
                     JSONObject jsonObject = new JSONObject(result);
                     if (jsonObject.getBoolean("Result")) {
-                        //1.存储帐号和密码
+                        //1.存储登录状态
                         mSharedPreferenceUtil.setValue(SpfConstants.KEY_IS_LOGIN, true);
                         mSharedPreferenceUtil.setValue(SpfConstants.KEY_NAME, jsonObject.getString("Name"));
                         //2.登录成功，获取Token

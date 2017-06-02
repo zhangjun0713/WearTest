@@ -67,6 +67,7 @@ public class MainActivity extends BaseActivity {
         intentFilter.addAction(Constants.BC_CANCEL_SERVICE_DIALOG);
         intentFilter.addAction(Constants.BC_FINISHED_SERVICE_SUCCEED);
         intentFilter.addAction(Constants.BC_ACCEPT_SERVICE_SUCCEED);
+        intentFilter.addAction(Constants.BC_GO_LOGIN);
         mReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
@@ -100,6 +101,12 @@ public class MainActivity extends BaseActivity {
                         } else {
                             ToastUtil.showToast(getApplicationContext(), "已经有其他服务业先接受了服务请求！", true);
                         }
+                        break;
+                    case Constants.BC_GO_LOGIN:
+                        mSharedPreferenceUtil.setValue(SpfConstants.KEY_IS_LOGIN, true);
+                        Intent loginIntent = new Intent(MainActivity.this, LoginActivity.class);
+                        startActivity(loginIntent);
+                        finish();
                         break;
                 }
             }

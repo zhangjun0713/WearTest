@@ -31,12 +31,12 @@ import java.net.SocketException;
 
 public class UdpReceiveServerIpService extends Service implements Runnable {
     private static final String TAG = "UdpReceiveServerIp";
-    private SharedPreferenceUtil sharedPreferenceUtil;
+    private SharedPreferenceUtil mSharedPreferenceUtil;
     private boolean isRegistered;
 
     @Override
     public void onCreate() {
-        sharedPreferenceUtil = new SharedPreferenceUtil(this, SpfConstants.SPF_NAME);
+        mSharedPreferenceUtil = new SharedPreferenceUtil(this, SpfConstants.SPF_NAME);
         x.task().run(this);
     }
 
@@ -49,13 +49,13 @@ public class UdpReceiveServerIpService extends Service implements Runnable {
     public int onStartCommand(Intent intent, final int flags, int startId) {
         try {
             JSONObject jsonObject = new JSONObject();
-            if (sharedPreferenceUtil.getBoolean(SpfConstants.KEY_IS_LOGIN, false)) {
+            if (mSharedPreferenceUtil.getBoolean(SpfConstants.KEY_IS_LOGIN, false)) {
                 //已经登录了则注册
                 isRegistered = true;
                 jsonObject.put("action", "REGIST");
-                jsonObject.put(SpfConstants.KEY_NAME, sharedPreferenceUtil.getString(SpfConstants.KEY_NAME, ""));
-                jsonObject.put(SpfConstants.KEY_ID, sharedPreferenceUtil.getString(SpfConstants.KEY_ID, ""));
-                jsonObject.put(SpfConstants.KEY_FLOOR, sharedPreferenceUtil.getString(SpfConstants.KEY_FLOOR, ""));
+                jsonObject.put(SpfConstants.KEY_NAME, mSharedPreferenceUtil.getString(SpfConstants.KEY_NAME, ""));
+                jsonObject.put(SpfConstants.KEY_ID, mSharedPreferenceUtil.getString(SpfConstants.KEY_ID, ""));
+                jsonObject.put(SpfConstants.KEY_FLOOR, mSharedPreferenceUtil.getString(SpfConstants.KEY_FLOOR, ""));
             } else {
                 //未登录则先获取服务器ip地址，然后登录注册
                 isRegistered = false;
@@ -88,10 +88,9 @@ public class UdpReceiveServerIpService extends Service implements Runnable {
                     if (!ToolUtil.isIPFormat(receivedMessage)) {
                         receivedMessage = packet.getAddress().getHostAddress();
                     }
-                    sharedPreferenceUtil.setValue(SpfConstants.KEY_SERVER_IP, receivedMessage);
+                    mSharedPreferenceUtil.setValue(SpfConstants.KEY_SERVER_IP, receivedMessage);
                     Constants.SERVER_IP = receivedMessage;
-                    Log.d(TAG, "address : " + packet.getAddress() +
-                            "\ncontent : " + receivedMessage);
+                    Log.d(TAG, "address : " + packet.getAddress() + "\ncontent : " + receivedMessage);
                     mHandler.sendEmptyMessage(STOP_SERVICE);
                     break;
                 } catch (IOException e) {

@@ -11,9 +11,9 @@ import android.support.annotation.Nullable;
 import android.util.Log;
 
 import com.ycsoft.wear.common.Constants;
-import com.ycsoft.wear.common.SocketConstants;
 import com.ycsoft.wear.common.SpfConstants;
 import com.ycsoft.wear.socket.MyWebSocketClient;
+import com.ycsoft.wear.ui.activity.LoginActivity;
 import com.ycsoft.wear.ui.activity.MainActivity;
 import com.ycsoft.wear.util.SharedPreferenceUtil;
 import com.ycsoft.wear.util.ToastUtil;
@@ -118,6 +118,17 @@ public class WebSocketService extends Service {
                     //与服务器连接异常或关闭了需要重新连接
                     ToolUtil.getToken(getApplicationContext(), mCallback);
                     break;
+                case GO_TO_LOGIN:
+                    if (getTopActivity(getApplicationContext()).equals(MainActivity.class.getName())) {
+                        Intent intent = new Intent(Constants.BC_GO_LOGIN);
+                        sendBroadcast(intent);
+                    } else {
+                        Intent intent = new Intent(getApplicationContext(), LoginActivity.class);
+                        intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        startActivity(intent);
+                    }
+                    break;
                 case ACCEPT_SERVICE_RESULT:
                     Intent acceptResultIntent = new Intent();
                     acceptResultIntent.putExtra("result", (boolean) msg.obj);
@@ -168,9 +179,11 @@ public class WebSocketService extends Service {
                 if (b) {
                     Constants.isConnectedServer = true;
                     Log.d(TAG, "run: 与服务器连接成功！");
+                    ToastUtil.showToast(getApplicationContext(), "已连上服务器！", true);
                 } else {
                     Constants.isConnectedServer = false;
                     Log.d(TAG, "run: 与服务器连接失败！");
+                    ToastUtil.showToast(getApplicationContext(), "连接服务器失败！", true);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -226,7 +239,7 @@ public class WebSocketService extends Service {
         webSocketClient.close();
         webSocketClient = null;
         URI_TOKEN = "";
-        ToastUtil.showToast(this, "WebSocketService停止了！", true);
+        ToastUtil.showToast(this, "与服务器断开了！", true);
         //如果是异常停止则需要重启服务
         if (new SharedPreferenceUtil(getApplicationContext(), SpfConstants.SPF_NAME).getBoolean(SpfConstants.KEY_IS_LOGIN, false)) {
             Intent intent = new Intent(getApplication(), WebSocketService.class);

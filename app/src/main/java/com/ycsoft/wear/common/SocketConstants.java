@@ -14,21 +14,9 @@ public class SocketConstants {
      */
     public static final int PORT_UDP_RECEIVE_SERVER_IP = 9002;
     /**
-     * 请求呼叫服务Socket接收端口
-     */
-    public static final int PORT_TCP_CALL_SERVICE_RECEIVE = 9003;
-    /**
      * 取消呼叫服务广播接收端口
      */
     public static final int PORT_UDP_CANCEL_CALL_SERVICE_RECEIVE = 9004;
-    /**
-     * 登录操作
-     */
-    public static final String ACTION_LOGIN = "login";
-    /**
-     * 退出登录操作
-     */
-    public static final String ACTION_LOGOUT = "logout";
     /**
      * 接受服务操作
      */

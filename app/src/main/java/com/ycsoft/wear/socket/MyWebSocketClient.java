@@ -1,7 +1,6 @@
 package com.ycsoft.wear.socket;
 
 import android.content.Context;
-import android.content.Intent;
 import android.os.Handler;
 import android.os.PowerManager;
 import android.util.Log;
@@ -10,7 +9,6 @@ import com.ycsoft.wear.common.Constants;
 import com.ycsoft.wear.common.SocketConstants;
 import com.ycsoft.wear.common.SpfConstants;
 import com.ycsoft.wear.service.WebSocketService;
-import com.ycsoft.wear.ui.activity.LoginActivity;
 import com.ycsoft.wear.util.SharedPreferenceUtil;
 import com.ycsoft.wear.util.ToastUtil;
 
@@ -113,25 +111,29 @@ public class MyWebSocketClient extends WebSocketClient {
     @Override
     public void onClose(int code, String reason, boolean remote) {
         Constants.isConnectedServer = false;
-        ToastUtil.showToast(mContext, "WebSocket连接中断了！", true);
+        ToastUtil.showToast(mContext, "连接关闭了！", true);
         Log.d(TAG, "onClose: \ncode=" + code + "\nreason=" + reason + "\nremote=" + remote);
         if (remote) {
             //服务器端主动断开了连接
             //根据code判断服务器断开连接的原因
-            switch (code) {
-                case 100:
-                    //已经在其它地方登录了
-                    mHandler.obtainMessage(WebSocketService.GO_TO_LOGIN).sendToTarget();
-                    break;
-            }
+            //已经在其它地方登录了
+            mHandler.obtainMessage(WebSocketService.GO_TO_LOGIN).sendToTarget();
         } else {
             //本客户端主动断开了连接
+            if (mReConnectedCount > 0) {
+                mReConnectedCount = 0;
+            }
+            mReConnectedCount++;
+            if (mReConnectedCount <= 3) {
+                mHandler.obtainMessage(WebSocketService.RE_CONNECT_SERVER).sendToTarget();
+            }
         }
     }
 
     @Override
     public void onError(Exception ex) {
         Constants.isConnectedServer = false;
+        ToastUtil.showToast(mContext, "连接异常中断了！", true);
         mReConnectedCount++;
         if (mReConnectedCount <= 3) {
             mHandler.obtainMessage(WebSocketService.RE_CONNECT_SERVER).sendToTarget();
