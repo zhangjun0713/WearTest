@@ -26,10 +26,10 @@ public class NetworkConnectedReceiver extends BroadcastReceiver {
         if (NetworkInfo.State.CONNECTED == wifiState) {
             //启动接收服务器IP的服务
             Log.d(TAG, "onReceive: 启动接收服务器IP的服务");
-//            if (!ToolUtil.isServiceLive(context, UdpReceiveServerIpService.class.getName())) {
-//                Intent getServerIntent = new Intent(context, UdpReceiveServerIpService.class);
-//                context.startService(getServerIntent);
-//            }
+            if (!ToolUtil.isServiceLive(context, UdpReceiveServerIpService.class.getName())) {
+                Intent getServerIntent = new Intent(context, UdpReceiveServerIpService.class);
+                context.startService(getServerIntent);
+            }
         }
     }
 }

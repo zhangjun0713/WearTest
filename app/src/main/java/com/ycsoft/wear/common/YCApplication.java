@@ -1,6 +1,7 @@
 package com.ycsoft.wear.common;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.Application;
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -114,6 +115,7 @@ public class YCApplication extends Application {
         return result;
     }
 
+    @SuppressLint("HardwareIds")
     public static String getDeviceInfo(Context context) {
         try {
             org.json.JSONObject json = new org.json.JSONObject();
@@ -124,21 +126,21 @@ public class YCApplication extends Application {
                 device_id = tm.getDeviceId();
             }
             String mac = null;
-            FileReader fstream = null;
+            FileReader reader;
             try {
-                fstream = new FileReader("/sys/class/net/wlan0/address");
+                reader = new FileReader("/sys/class/net/wlan0/address");
             } catch (FileNotFoundException e) {
-                fstream = new FileReader("/sys/class/net/eth0/address");
+                reader = new FileReader("/sys/class/net/eth0/address");
             }
             BufferedReader in = null;
             try {
-                in = new BufferedReader(fstream, 1024);
+                in = new BufferedReader(reader, 1024);
                 mac = in.readLine();
             } catch (IOException e) {
                 e.printStackTrace();
             } finally {
                 try {
-                    fstream.close();
+                    reader.close();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }

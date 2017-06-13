@@ -20,8 +20,7 @@
         android:theme="@style/AppTheme">
         <activity
             android:name=".ui.activity.SplashActivity"
-            android:alwaysRetainTaskState="true"
-            android:launchMode="singleTask">
+            android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
 
@@ -30,18 +29,17 @@
         </activity>
         <activity
             android:name="com.ycsoft.wear.ui.activity.MainActivity"
-            android:alwaysRetainTaskState="true"
-            android:launchMode="singleTask"/>
+            android:screenOrientation="portrait"/>
         <activity
             android:name="com.ycsoft.wear.ui.activity.LoginActivity"
-            android:launchMode="singleTask"/>
+            android:screenOrientation="portrait"/>
         <!--监听网络变化广播-->
         <receiver android:name=".receiver.NetworkConnectedReceiver">
             <intent-filter>
                 <action android:name="android.net.conn.CONNECTIVITY_CHANGE"/>
             </intent-filter>
         </receiver>
-        <service android:name=".service.UdpReceiveCancelCallService"/>
+        <service android:name=".service.UdpReceiveCancelCallService" />
         <service android:name=".service.UdpReceiveServerIpService"/>
         <service android:name=".service.WebSocketService"/>
     </application>

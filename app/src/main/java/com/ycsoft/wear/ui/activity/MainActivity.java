@@ -129,7 +129,6 @@ public class MainActivity extends BaseActivity {
         } else {
             //之前未登录
             goLoginPage();
-            finish();
         }
         if (!mSharedPreferenceUtil.getString(SpfConstants.KEY_ROOM_NUMBER, "").equals("")) {
             if (mSharedPreferenceUtil.getBoolean(SpfConstants.KEY_NEED_VIBRATE, false)) {
@@ -164,7 +163,7 @@ public class MainActivity extends BaseActivity {
                         ToastUtil.showToast(getApplicationContext(), "登录失败，请重试！", true);
                         mSharedPreferenceUtil.removeKey(SpfConstants.KEY_ID);
                         mSharedPreferenceUtil.removeKey(SpfConstants.KEY_PWD);
-                        mSharedPreferenceUtil.removeKey(SpfConstants.KEY_FLOOR);
+                        mSharedPreferenceUtil.removeKey(SpfConstants.KEY_AREA_NAME);
                     }
                 } catch (JSONException e) {
                     e.printStackTrace();
@@ -249,6 +248,16 @@ public class MainActivity extends BaseActivity {
         });
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (Constants.NEED_RE_LOGIN) {
+            Intent intent = new Intent(this, LoginActivity.class);
+            startActivity(intent);
+            finish();
+        }
+    }
+
     /**
      * 退出登录
      */
@@ -272,7 +281,6 @@ public class MainActivity extends BaseActivity {
                 dialog.dismiss();
                 //跳转到登录界面
                 goLoginPage();
-                finish();
                 //清除本地登录信息
                 clearLoginInfo();
             }
@@ -286,7 +294,7 @@ public class MainActivity extends BaseActivity {
     private void clearLoginInfo() {
         mSharedPreferenceUtil.removeKey(SpfConstants.KEY_ID);
         mSharedPreferenceUtil.removeKey(SpfConstants.KEY_NAME);
-        mSharedPreferenceUtil.removeKey(SpfConstants.KEY_FLOOR);
+        mSharedPreferenceUtil.removeKey(SpfConstants.KEY_AREA_NAME);
         mSharedPreferenceUtil.removeKey(SpfConstants.KEY_IS_LOGIN);
         mSharedPreferenceUtil.removeKey(SpfConstants.KEY_ROOM_NUMBER);
         mSharedPreferenceUtil.removeKey(SpfConstants.KEY_NEED_VIBRATE);
@@ -304,6 +312,7 @@ public class MainActivity extends BaseActivity {
                     WebSocketClient client = WebSocketService.getWebSocketClient();
                     if (client != null)
                         client.close();
+                    //停止服务器
                     Intent intent = new Intent(MainActivity.this, WebSocketService.class);
                     stopService(intent);
                     break;
@@ -317,6 +326,7 @@ public class MainActivity extends BaseActivity {
     private void goLoginPage() {
         Intent intent = new Intent(MainActivity.this, LoginActivity.class);
         startActivity(intent);
+        finish();
     }
 
     @Override

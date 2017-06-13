@@ -32,13 +32,19 @@ public class SpfConstants {
      */
     public static final String KEY_PWD = "password";
     /**
-     * 已经注册的服务楼层
+     * 已经注册的服务区域名字
      */
-    public static final String KEY_FLOOR = "floor";
+    public static final String KEY_AREA_NAME = "floor";
     /**
      * 呼叫服务的房间号
      */
     public static final String KEY_ROOM_NUMBER = "clientName";
-    public static final String KEY_SAVE_ID = "save_id";
-    public static final String KEY_SAVE_PWD = "save_pwd";
+    /**
+     * 存储的服务员ID号
+     */
+    public static final String KEY_SAVED_ID = "save_id";
+    /**
+     * 存储的服务员密码
+     */
+    public static final String KEY_SAVED_PWD = "save_pwd";
 }

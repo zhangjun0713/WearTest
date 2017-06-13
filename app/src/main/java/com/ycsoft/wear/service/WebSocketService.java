@@ -1,5 +1,6 @@
 package com.ycsoft.wear.service;
 
+import android.annotation.SuppressLint;
 import android.app.ActivityManager;
 import android.app.Service;
 import android.content.Context;
@@ -13,7 +14,6 @@ import android.util.Log;
 import com.ycsoft.wear.common.Constants;
 import com.ycsoft.wear.common.SpfConstants;
 import com.ycsoft.wear.socket.MyWebSocketClient;
-import com.ycsoft.wear.ui.activity.LoginActivity;
 import com.ycsoft.wear.ui.activity.MainActivity;
 import com.ycsoft.wear.util.SharedPreferenceUtil;
 import com.ycsoft.wear.util.ToastUtil;
@@ -39,8 +39,8 @@ public class WebSocketService extends Service {
     private static final String URI_PREFIX = "ws://";
     private static final String URI_SUFFIX = ":80/api/waiter?";
     public static String URI_TOKEN = "";
-    private ExecutorService executorService;
     private static WebSocketClient webSocketClient;
+    private ExecutorService executorService;
 
     /**
      * 获取WebSocketClient
@@ -54,12 +54,12 @@ public class WebSocketService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        executorService = Executors.newCachedThreadPool();
+        executorService = Executors.newFixedThreadPool(5);
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        executorService.execute(new WebSocketConnect());
+        executorService.submit(new WebSocketConnect());
         return super.onStartCommand(intent, flags, startId);
     }
 
@@ -93,6 +93,7 @@ public class WebSocketService extends Service {
      * 点击完成服务结果
      */
     public static final int FINISHED_SERVICE_RESULT = 6;
+    @SuppressLint("HandlerLeak")
     private Handler mHandler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
@@ -119,11 +120,14 @@ public class WebSocketService extends Service {
                     ToolUtil.getToken(getApplicationContext(), mCallback);
                     break;
                 case GO_TO_LOGIN:
+                    //震动5s提醒服务员
+                    ToolUtil.startVibrate(getApplicationContext(), 5);
                     if (getTopActivity(getApplicationContext()).equals(MainActivity.class.getName())) {
                         Intent intent = new Intent(Constants.BC_GO_LOGIN);
                         sendBroadcast(intent);
                     } else {
-                        Intent intent = new Intent(getApplicationContext(), LoginActivity.class);
+                        Constants.NEED_RE_LOGIN = true;
+                        Intent intent = new Intent(getApplicationContext(), MainActivity.class);
                         intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
                         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                         startActivity(intent);
@@ -207,9 +211,11 @@ public class WebSocketService extends Service {
                         //2.清除之前连接的对象
                         webSocketClient.close();
                         webSocketClient = null;
-                        URI_TOKEN = "";
                         //3.重新连接服务器
-                        executorService.execute(new WebSocketConnect());
+                        executorService.submit(new WebSocketConnect());
+                    } else {
+                        //自动重新登录失败
+                        ToastUtil.showToast(getApplicationContext(), "自动重新登录失败！", true);
                     }
                 }
             } catch (JSONException e) {
@@ -219,17 +225,17 @@ public class WebSocketService extends Service {
 
         @Override
         public void onError(Throwable ex, boolean isOnCallback) {
-
+            ex.printStackTrace();
+            ToastUtil.showToast(getApplicationContext(), "访问服务器失败！", true);
         }
 
         @Override
         public void onCancelled(CancelledException cex) {
-
+            cex.printStackTrace();
         }
 
         @Override
         public void onFinished() {
-
         }
     };
 
@@ -239,9 +245,10 @@ public class WebSocketService extends Service {
         webSocketClient.close();
         webSocketClient = null;
         URI_TOKEN = "";
-        ToastUtil.showToast(this, "与服务器断开了！", true);
-        //如果是异常停止则需要重启服务
-        if (new SharedPreferenceUtil(getApplicationContext(), SpfConstants.SPF_NAME).getBoolean(SpfConstants.KEY_IS_LOGIN, false)) {
+        if (new SharedPreferenceUtil(getApplicationContext(), SpfConstants.SPF_NAME)
+                .getBoolean(SpfConstants.KEY_IS_LOGIN, false)) {
+            //当前是登录状态的情况下证明服务是被系统杀掉的，立即重启服务连接服务器
+            ToastUtil.showToast(this, "服务异常销毁了，即将重启服务！", true);
             Intent intent = new Intent(getApplication(), WebSocketService.class);
             getApplication().startService(intent);
         }

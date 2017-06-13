@@ -1,5 +1,6 @@
 package com.ycsoft.wear.service;
 
+import android.annotation.SuppressLint;
 import android.app.Service;
 import android.content.Intent;
 import android.os.Handler;
@@ -32,7 +33,6 @@ import java.net.SocketException;
 public class UdpReceiveServerIpService extends Service implements Runnable {
     private static final String TAG = "UdpReceiveServerIp";
     private SharedPreferenceUtil mSharedPreferenceUtil;
-    private boolean isRegistered;
 
     @Override
     public void onCreate() {
@@ -49,18 +49,7 @@ public class UdpReceiveServerIpService extends Service implements Runnable {
     public int onStartCommand(Intent intent, final int flags, int startId) {
         try {
             JSONObject jsonObject = new JSONObject();
-            if (mSharedPreferenceUtil.getBoolean(SpfConstants.KEY_IS_LOGIN, false)) {
-                //已经登录了则注册
-                isRegistered = true;
-                jsonObject.put("action", "REGIST");
-                jsonObject.put(SpfConstants.KEY_NAME, mSharedPreferenceUtil.getString(SpfConstants.KEY_NAME, ""));
-                jsonObject.put(SpfConstants.KEY_ID, mSharedPreferenceUtil.getString(SpfConstants.KEY_ID, ""));
-                jsonObject.put(SpfConstants.KEY_FLOOR, mSharedPreferenceUtil.getString(SpfConstants.KEY_FLOOR, ""));
-            } else {
-                //未登录则先获取服务器ip地址，然后登录注册
-                isRegistered = false;
-                jsonObject.put("action", "GET_SERVER_IP");
-            }
+            jsonObject.put("action", "GET_SERVER_IP");
             UdpSendBroadcast.sendBroadCastToCenter(this, jsonObject.toString(),
                     SocketConstants.PORT_UDP_GET_SERVER_IP);
         } catch (JSONException e) {
@@ -102,17 +91,17 @@ public class UdpReceiveServerIpService extends Service implements Runnable {
         }
     }
 
+    /**
+     * 停止当前获取服务器IP的服务
+     */
     private static final int STOP_SERVICE = 1;
+    @SuppressLint("HandlerLeak")
     private Handler mHandler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
             switch (msg.what) {
                 case STOP_SERVICE:
-                    if (isRegistered) {
-                        Log.d(TAG, "handleMessage: 向服务器注册成功！");
-                    } else {
-                        Log.d(TAG, "handleMessage: 获取服务器IP成功！");
-                    }
+                    Log.d(TAG, "handleMessage: 获取服务器IP成功！");
                     //广播通知连接成功
                     Intent intent = new Intent(SplashActivity.BC_CONNECTED_SERVER);
                     sendBroadcast(intent);
@@ -121,9 +110,4 @@ public class UdpReceiveServerIpService extends Service implements Runnable {
             }
         }
     };
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-    }
 }

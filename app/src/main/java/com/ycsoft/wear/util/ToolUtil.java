@@ -2,14 +2,12 @@ package com.ycsoft.wear.util;
 
 import android.app.ActivityManager;
 import android.content.Context;
-import android.content.Intent;
+import android.os.PowerManager;
+import android.os.Vibrator;
 
 import com.ycsoft.wear.common.Constants;
 import com.ycsoft.wear.common.SpfConstants;
-import com.ycsoft.wear.service.WebSocketService;
 
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.xutils.common.Callback;
 import org.xutils.http.RequestParams;
 import org.xutils.x;
@@ -45,7 +43,7 @@ public class ToolUtil {
      * @return
      */
     public static boolean isIPFormat(String source) {
-        boolean flag = false;
+        boolean flag;
         Pattern pattern = Pattern
                 .compile("\\b((?!\\d\\d\\d)\\d+|1\\d\\d|2[0-4]\\d|25[0-5])\\.((?!\\d\\d\\d)\\d+|1\\d\\d|2[0-4]\\d|25[0-5])\\.((?!\\d\\d\\d)\\d+|1\\d\\d|2[0-4]\\d|25[0-5])\\.((?!\\d\\d\\d)\\d+|1\\d\\d|2[0-4]\\d|25[0-5])\\b");
         Matcher m = pattern.matcher(source);
@@ -86,5 +84,41 @@ public class ToolUtil {
         params.addParameter(SpfConstants.KEY_ID, mSharedPreferenceUtil.getString(SpfConstants.KEY_ID, ""));
         params.addParameter(SpfConstants.KEY_PWD, mSharedPreferenceUtil.getString(SpfConstants.KEY_PWD, ""));
         x.http().get(params, callback);
+    }
+
+    /**
+     * 唤醒屏幕
+     */
+    public static void wakeUpScreen(Context context) {
+        PowerManager.WakeLock mWakelock;
+        PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+        mWakelock = pm.newWakeLock(PowerManager.FULL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP, "wake_tag");
+        mWakelock.acquire();
+    }
+
+    /**
+     * 开始震动
+     *
+     * @param context
+     * @param second  秒
+     */
+    public static void startVibrate(Context context, int second) {
+        Vibrator vibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
+        if (vibrator.hasVibrator()) {
+            long[] mPattern = new long[second * 2];
+            for (int i = 0; i < second * 2; i++) {
+                mPattern[i] = 500;
+            }
+            vibrator.vibrate(mPattern, -1);
+        }
+    }
+
+    /**
+     * 停止震动
+     */
+    public static void stopVibrator(Context context) {
+        Vibrator mVibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
+        if (mVibrator != null)
+            mVibrator.cancel();
     }
 }

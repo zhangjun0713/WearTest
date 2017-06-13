@@ -7,6 +7,7 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import com.ycsoft.wear.BuildConfig;
 import com.ycsoft.wear.R;
 import com.ycsoft.wear.common.SpfConstants;
 import com.ycsoft.wear.service.WebSocketService;
@@ -54,8 +55,8 @@ public class LoginActivity extends BaseActivity {
 
     @Override
     protected void initView() {
-        String id = mSharedPreferenceUtil.getString(SpfConstants.KEY_SAVE_ID, "");
-        String pwd = mSharedPreferenceUtil.getString(SpfConstants.KEY_SAVE_PWD, "");
+        String id = mSharedPreferenceUtil.getString(SpfConstants.KEY_SAVED_ID, "");
+        String pwd = mSharedPreferenceUtil.getString(SpfConstants.KEY_SAVED_PWD, "");
         if (!id.equals("") && !pwd.equals("")) {
             etName.setText(id);
             etPassword.setText(pwd);
@@ -76,20 +77,18 @@ public class LoginActivity extends BaseActivity {
             Toast.makeText(this, "请输入密码", Toast.LENGTH_SHORT).show();
             return;
         }
-        String name, floor, password;
+        String name, password;
         name = etName.getText().toString().trim();
-        floor = "测试";
         password = etPassword.getText().toString().trim();
         mSharedPreferenceUtil.setValue(SpfConstants.KEY_ID, name);
         mSharedPreferenceUtil.setValue(SpfConstants.KEY_PWD, password);
-        mSharedPreferenceUtil.setValue(SpfConstants.KEY_FLOOR, floor);
         if (cbRememberPassword.isChecked()) {
             //存储登录名和密码
-            mSharedPreferenceUtil.setValue(SpfConstants.KEY_SAVE_ID, name);
-            mSharedPreferenceUtil.setValue(SpfConstants.KEY_SAVE_PWD, password);
+            mSharedPreferenceUtil.setValue(SpfConstants.KEY_SAVED_ID, name);
+            mSharedPreferenceUtil.setValue(SpfConstants.KEY_SAVED_PWD, password);
         } else {
-            mSharedPreferenceUtil.removeKey(SpfConstants.KEY_SAVE_ID);
-            mSharedPreferenceUtil.removeKey(SpfConstants.KEY_SAVE_PWD);
+            mSharedPreferenceUtil.removeKey(SpfConstants.KEY_SAVED_ID);
+            mSharedPreferenceUtil.removeKey(SpfConstants.KEY_SAVED_PWD);
         }
         login();
     }
@@ -103,8 +102,10 @@ public class LoginActivity extends BaseActivity {
                     JSONObject jsonObject = new JSONObject(result);
                     if (jsonObject.getBoolean("Result")) {
                         //1.存储登录状态
+                        String area = BuildConfig.DEBUG ? "测试" : jsonObject.getString("Area");
                         mSharedPreferenceUtil.setValue(SpfConstants.KEY_IS_LOGIN, true);
                         mSharedPreferenceUtil.setValue(SpfConstants.KEY_NAME, jsonObject.getString("Name"));
+                        mSharedPreferenceUtil.setValue(SpfConstants.KEY_AREA_NAME, area);
                         //2.登录成功，获取Token
                         String token = jsonObject.getString("Token");
                         WebSocketService.URI_TOKEN = "token=" + token;
@@ -114,14 +115,14 @@ public class LoginActivity extends BaseActivity {
                             startService(intent);
                         }
                         //4.跳转到主界面
-                        finish();
                         goMainActivity();
+                        finish();
                     } else {
                         //登录失败
                         ToastUtil.showToast(getApplicationContext(), "登录失败，请重试！", true);
                         mSharedPreferenceUtil.removeKey(SpfConstants.KEY_ID);
                         mSharedPreferenceUtil.removeKey(SpfConstants.KEY_PWD);
-                        mSharedPreferenceUtil.removeKey(SpfConstants.KEY_FLOOR);
+                        mSharedPreferenceUtil.removeKey(SpfConstants.KEY_AREA_NAME);
                     }
                 } catch (JSONException e) {
                     e.printStackTrace();
@@ -131,6 +132,7 @@ public class LoginActivity extends BaseActivity {
             @Override
             public void onError(Throwable ex, boolean isOnCallback) {
                 ex.printStackTrace();
+                ToastUtil.showToast(getApplicationContext(), "访问服务器失败！", true);
             }
 
             @Override

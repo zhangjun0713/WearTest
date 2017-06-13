@@ -61,8 +61,8 @@ public class UdpReceiveCancelCallService extends Service {
                                     packet.getLength(), "UTF-8");
                             //2.解析并处理消息
                             JSONObject jsonObject = new JSONObject(receivedMessage);
-                            if (jsonObject.getString(SpfConstants.KEY_FLOOR).equals(sharedPreferenceUtil
-                                    .getString(SpfConstants.KEY_FLOOR, ""))) {
+                            if (jsonObject.getString(SpfConstants.KEY_AREA_NAME).equals(sharedPreferenceUtil
+                                    .getString(SpfConstants.KEY_AREA_NAME, ""))) {
                                 String name = jsonObject.getString("name");
                                 //3.通知提示已有服务员某某先确认了服务和取消震动并关闭提示的呼叫服务对话框
                                 mHandler.obtainMessage(CANCEL_CALL, name).sendToTarget();

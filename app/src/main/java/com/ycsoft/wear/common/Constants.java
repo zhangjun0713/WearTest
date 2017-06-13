@@ -30,4 +30,8 @@ public class Constants {
      * 当前是否是与服务器建立了WebSocket连接
      */
     public static boolean isConnectedServer;
+    /**
+     * 需要重新登录
+     */
+    public static boolean NEED_RE_LOGIN;
 }

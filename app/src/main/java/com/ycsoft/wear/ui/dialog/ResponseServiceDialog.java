@@ -1,7 +1,6 @@
 package com.ycsoft.wear.ui.dialog;
 
 import android.content.Context;
-import android.os.Vibrator;
 import android.view.View;
 import android.widget.TextView;
 
@@ -13,6 +12,7 @@ import com.ycsoft.wear.service.WebSocketService;
 import com.ycsoft.wear.ui.BaseDialog;
 import com.ycsoft.wear.util.SharedPreferenceUtil;
 import com.ycsoft.wear.util.ToastUtil;
+import com.ycsoft.wear.util.ToolUtil;
 
 import org.java_websocket.client.WebSocketClient;
 import org.json.JSONException;
@@ -32,11 +32,9 @@ public class ResponseServiceDialog extends BaseDialog {
     TextView tvMessage;
     private SharedPreferenceUtil mSharedPreferenceUtil;
     private String roomNumber;
-    private Vibrator mVibrator;
 
     public ResponseServiceDialog(Context context, String roomNumber) {
         super(context, R.layout.dialog_response_service, null);
-        mVibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
         this.roomNumber = roomNumber;
         mSharedPreferenceUtil = new SharedPreferenceUtil(context, SpfConstants.SPF_NAME);
     }
@@ -57,7 +55,7 @@ public class ResponseServiceDialog extends BaseDialog {
                 cancelPressed();
                 break;
             case R.id.btn_positive:
-                stopVibrator();
+                ToolUtil.stopVibrator(getContext());
                 ToastUtil.showToast(getContext(), "等待机服务器应答", true);
                 try {
                     JSONObject jsonObject = new JSONObject();
@@ -82,36 +80,7 @@ public class ResponseServiceDialog extends BaseDialog {
     public void show(int width, int height) {
         super.show(width, height);
         //显示对话框，立即震动
-        startVibrate();
-    }
-
-    /**
-     * 开始震动
-     */
-    private void startVibrate() {
-        if (mVibrator.hasVibrator()) {
-            long[] mPattern = new long[]{
-                    500, 500, 500, 500,
-                    500, 500, 500, 500,
-                    500, 500, 500, 500,
-                    500, 500, 500, 500,
-                    500, 500, 500, 500,
-                    500, 500, 500, 500,
-                    500, 500, 500, 500,
-                    500, 500, 500, 500,
-                    500, 500, 500, 500,
-                    500, 500, 500, 500};//震动20s时间
-            mVibrator.vibrate(mPattern, -1);
-        }
-    }
-
-    /**
-     * 停止震动
-     */
-    private void stopVibrator() {
-        if (mVibrator != null)
-            mVibrator.cancel();
-        mSharedPreferenceUtil.removeKey(SpfConstants.KEY_NEED_VIBRATE);
+        ToolUtil.startVibrate(getContext(), 30);
     }
 
     @Override
@@ -124,7 +93,8 @@ public class ResponseServiceDialog extends BaseDialog {
      * 点击了取消按钮
      */
     private void cancelPressed() {
-        stopVibrator();
+        mSharedPreferenceUtil.removeKey(SpfConstants.KEY_NEED_VIBRATE);
+        ToolUtil.stopVibrator(getContext());
         clearRoomInfo();
         dismiss();
     }
