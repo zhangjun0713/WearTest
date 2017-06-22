@@ -13,12 +13,11 @@ import com.ycsoft.wear.util.SharedPreferenceUtil;
  */
 
 public class BootCompleteReceiver extends BroadcastReceiver {
-    private SharedPreferenceUtil mSharedPreferenceUtil;
 
     @Override
     public void onReceive(Context context, Intent intent) {
         //清除掉配置文件中的服务器IP地址信息，在启动APP时自动重新去获取
-        mSharedPreferenceUtil = new SharedPreferenceUtil(context, SpfConstants.SPF_NAME);
+        SharedPreferenceUtil mSharedPreferenceUtil = new SharedPreferenceUtil(context, SpfConstants.SPF_NAME);
         mSharedPreferenceUtil.removeKey(SpfConstants.KEY_SERVER_IP);
     }
 }

@@ -69,9 +69,7 @@ public class UdpReceiveCancelCallService extends Service {
                                 Log.d(TAG, "address : " + packet.getAddress() +
                                         "\ncontent : " + receivedMessage);
                             }
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        } catch (JSONException e) {
+                        } catch (IOException | JSONException e) {
                             e.printStackTrace();
                         }
                     }
