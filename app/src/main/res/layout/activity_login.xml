@@ -27,6 +27,7 @@
             android:background="@drawable/et_bg_selector"
             android:hint="姓名/编号"
             android:inputType="text"
+            android:textSize="12sp"
             android:lines="1"
             android:paddingEnd="10dp"
             android:paddingStart="10dp"
@@ -42,6 +43,7 @@
             android:background="@drawable/et_bg_selector"
             android:hint="密码"
             android:inputType="textPassword"
+            android:textSize="12sp"
             android:lines="1"
             android:paddingEnd="10dp"
             android:paddingStart="10dp"
@@ -50,11 +52,14 @@
         <CheckBox
             android:id="@+id/cb_remember_password"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_height="30sp"
             android:layout_alignEnd="@id/et_password"
             android:layout_alignRight="@id/et_password"
             android:layout_below="@id/et_password"
+            android:textColor="#e5535353"
+            android:button="@drawable/cb_button_selector"
             android:layout_marginTop="10dp"
+            android:textSize="10sp"
             android:checked="true"
             android:text="记住密码" />
 
