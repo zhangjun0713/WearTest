@@ -7,17 +7,17 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.Toast;
 
-import com.ycsoft.wear.BuildConfig;
+import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 import com.ycsoft.wear.R;
 import com.ycsoft.wear.common.SpfConstants;
+import com.ycsoft.wear.model.LoginResultEntity;
 import com.ycsoft.wear.service.WebSocketService;
 import com.ycsoft.wear.ui.BaseActivity;
 import com.ycsoft.wear.util.SharedPreferenceUtil;
 import com.ycsoft.wear.util.ToastUtil;
 import com.ycsoft.wear.util.ToolUtil;
 
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.xutils.common.Callback;
 
 import butterknife.BindView;
@@ -99,32 +99,35 @@ public class LoginActivity extends BaseActivity {
             @Override
             public void onSuccess(String result) {
                 try {
-                    JSONObject jsonObject = new JSONObject(result);
-                    if (jsonObject.getBoolean("Result")) {
-                        //1.存储登录状态
-                        String area = BuildConfig.DEBUG ? "测试" : jsonObject.getString("Area");
-                        mSharedPreferenceUtil.setValue(SpfConstants.KEY_IS_LOGIN, true);
-                        mSharedPreferenceUtil.setValue(SpfConstants.KEY_NAME, jsonObject.getString("Name"));
-                        mSharedPreferenceUtil.setValue(SpfConstants.KEY_AREA_NAME, area);
-                        //2.登录成功，获取Token
-                        String token = jsonObject.getString("Token");
-                        WebSocketService.URI_TOKEN = "token=" + token;
-                        //3.启动WebSocketService，启动后自动去连接上服务器
-                        if (!ToolUtil.isServiceLive(getApplicationContext(), WebSocketService.class.getName())) {
-                            Intent intent = new Intent(getApplicationContext(), WebSocketService.class);
-                            startService(intent);
+                    Gson gson = new Gson();
+                    LoginResultEntity entity = gson.fromJson(result, LoginResultEntity.class);
+                    if (entity != null) {
+                        if (entity.result) {
+                            //1.存储登录状态
+                            String area = entity.waiterInfo.areaInfo.name;
+                            mSharedPreferenceUtil.setValue(SpfConstants.KEY_IS_LOGIN, true);
+                            mSharedPreferenceUtil.setValue(SpfConstants.KEY_NAME, entity.waiterInfo.name);
+                            mSharedPreferenceUtil.setValue(SpfConstants.KEY_AREA_NAME, area);
+                            //2.登录成功，获取Token
+                            String token = entity.token;
+                            WebSocketService.URI_TOKEN = "token=" + token;
+                            //3.启动WebSocketService，启动后自动去连接上服务器
+                            if (!ToolUtil.isServiceLive(getApplicationContext(), WebSocketService.class.getName())) {
+                                Intent intent = new Intent(getApplicationContext(), WebSocketService.class);
+                                startService(intent);
+                            }
+                            //4.跳转到主界面
+                            goMainActivity();
+                            finish();
+                        } else {
+                            //登录失败
+                            ToastUtil.showToast(getApplicationContext(), "登录失败，请重试！", true);
+                            mSharedPreferenceUtil.removeKey(SpfConstants.KEY_ID);
+                            mSharedPreferenceUtil.removeKey(SpfConstants.KEY_PWD);
+                            mSharedPreferenceUtil.removeKey(SpfConstants.KEY_AREA_NAME);
                         }
-                        //4.跳转到主界面
-                        goMainActivity();
-                        finish();
-                    } else {
-                        //登录失败
-                        ToastUtil.showToast(getApplicationContext(), "登录失败，请重试！", true);
-                        mSharedPreferenceUtil.removeKey(SpfConstants.KEY_ID);
-                        mSharedPreferenceUtil.removeKey(SpfConstants.KEY_PWD);
-                        mSharedPreferenceUtil.removeKey(SpfConstants.KEY_AREA_NAME);
                     }
-                } catch (JSONException e) {
+                } catch (JsonSyntaxException e) {
                     e.printStackTrace();
                 }
             }

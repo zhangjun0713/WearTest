@@ -203,10 +203,10 @@ public class WebSocketService extends Service {
         public void onSuccess(String result) {
             try {
                 JSONObject jsonObject = new JSONObject(result);
-                if (jsonObject.getBoolean("Result")) {
-                    if (jsonObject.getBoolean("Result")) {
+                if (jsonObject.getBoolean("result")) {
+                    if (jsonObject.getBoolean("result")) {
                         //1.登录成功，获取Token
-                        String token = jsonObject.getString("Token");
+                        String token = jsonObject.getString("token");
                         URI_TOKEN = "token=" + token;
                         //2.清除之前连接的对象
                         webSocketClient.close();

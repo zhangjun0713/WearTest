@@ -78,7 +78,7 @@ public class MyWebSocketClient extends WebSocketClient {
                     break;
                 case SocketConstants.ACTION_CANCEL_SERVICE:
                     //---收到取消呼叫服务命令
-                    mHandler.obtainMessage().sendToTarget();
+                    mHandler.obtainMessage(WebSocketService.CANCEL_SERVICE).sendToTarget();
                     break;
             }
         } catch (JSONException e) {

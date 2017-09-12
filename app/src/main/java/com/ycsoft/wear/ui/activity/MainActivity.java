@@ -78,6 +78,9 @@ public class MainActivity extends BaseActivity {
                         break;
                     case Constants.BC_CANCEL_SERVICE_DIALOG:
                         //取消呼叫服务对话框
+                        mSharedPreferenceUtil.removeKey(SpfConstants.KEY_NEED_VIBRATE);
+                        mSharedPreferenceUtil.removeKey(SpfConstants.KEY_ROOM_NUMBER);
+                        ToolUtil.stopVibrator(MainActivity.this);
                         if (dialog != null && dialog.isShowing()) {
                             dialog.dismiss();
                         }
@@ -147,9 +150,9 @@ public class MainActivity extends BaseActivity {
             public void onSuccess(String result) {
                 try {
                     JSONObject jsonObject = new JSONObject(result);
-                    if (jsonObject.getBoolean("Result")) {
+                    if (jsonObject.getBoolean("result")) {
                         //1.登录成功，获取Token
-                        String token = jsonObject.getString("Token");
+                        String token = jsonObject.getString("token");
                         WebSocketService.URI_TOKEN = "token=" + token;
                         //2.启动WebSocketService，启动后自动去连接上服务器
                         if (!ToolUtil.isServiceLive(getApplicationContext(), WebSocketService.class.getName())) {
@@ -194,7 +197,8 @@ public class MainActivity extends BaseActivity {
         switch (v.getId()) {
             case R.id.btn_finished_service:
                 //完成服务
-                if (WebSocketService.getWebSocketClient() != null) {
+                WebSocketClient client = WebSocketService.getWebSocketClient();
+                if (client != null) {
                     try {
                         JSONObject jsonObject = new JSONObject();
                         jsonObject.put("action", SocketConstants.ACTION_FINISHED_SERVICE);
@@ -204,7 +208,7 @@ public class MainActivity extends BaseActivity {
                                 .getString(SpfConstants.KEY_NAME, ""));
                         jsonObject.put(SpfConstants.KEY_ROOM_NUMBER, mSharedPreferenceUtil
                                 .getString(SpfConstants.KEY_ROOM_NUMBER, ""));
-                        WebSocketService.getWebSocketClient().send(jsonObject.toString());
+                        client.send(jsonObject.toString());
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }

@@ -34,7 +34,7 @@ public class SpfConstants {
     /**
      * 已经注册的服务区域名字
      */
-    public static final String KEY_AREA_NAME = "floor";
+    public static final String KEY_AREA_NAME = "area";
     /**
      * 呼叫服务的房间号
      */

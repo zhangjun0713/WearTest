@@ -63,6 +63,7 @@ public class ResponseServiceDialog extends BaseDialog {
                     jsonObject.put(SpfConstants.KEY_ID, mSharedPreferenceUtil.getString(SpfConstants.KEY_ID, ""));
                     jsonObject.put(SpfConstants.KEY_NAME, mSharedPreferenceUtil.getString(SpfConstants.KEY_NAME, ""));
                     jsonObject.put(SpfConstants.KEY_ROOM_NUMBER, mSharedPreferenceUtil.getString(SpfConstants.KEY_ROOM_NUMBER, ""));
+                    jsonObject.put(SpfConstants.KEY_AREA_NAME, mSharedPreferenceUtil.getString(SpfConstants.KEY_AREA_NAME, ""));
                     WebSocketClient mWebSocketClient = WebSocketService.getWebSocketClient();
                     if (Constants.isConnectedServer) {
                         if (mWebSocketClient != null)
