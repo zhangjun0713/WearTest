@@ -94,12 +94,10 @@ public class MainActivity extends BaseActivity {
                             dialog.dismiss();
                         }
                         if (intent.getBooleanExtra("result", false)) {
-                            ToastUtil.showToast(getApplicationContext(), "请尽快去\n" + mSharedPreferenceUtil
-                                    .getString(SpfConstants.KEY_ROOM_NUMBER, "") + "\n服务！", true);
                             tvInfo.setText("请尽快到客户房间\n" + mSharedPreferenceUtil.getString(SpfConstants.KEY_ROOM_NUMBER, ""));
                             btnFinishedService.setVisibility(View.VISIBLE);
                         } else {
-                            ToastUtil.showToast(getApplicationContext(), "已经有其他服务业先接受了服务请求！", true);
+                            ToastUtil.showToast(getApplicationContext(), "已经有其他服务员先接受了服务请求！", true);
                         }
                         break;
                     case Constants.BC_GO_LOGIN:
