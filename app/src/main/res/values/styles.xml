@@ -11,10 +11,9 @@
         <item name="windowNoTitle">true</item>
     </style>
     <!--无标题无背景Dialog-->
-    <style name="YCDialogStyle" parent="Animation.AppCompat.Dialog">
+    <style name="YCDialogStyle" parent="Base.Theme.AppCompat.Dialog">
         <item name="android:windowBackground">@android:color/transparent</item>
-        <item name="android:windowNoTitle">@null</item>
+        <item name="android:windowNoTitle">true</item>
         <item name="android:windowCloseOnTouchOutside">true</item>
-        <item name="android:backgroundDimEnabled">true</item>
     </style>
 </resources>
