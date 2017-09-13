@@ -34,6 +34,10 @@ public class MyWebSocketClient extends WebSocketClient {
     private SharedPreferenceUtil mSharedPreferenceUtil;
     private Handler mHandler;
     private Context mContext;
+    /**
+     * 是否成功接受了服务
+     */
+    private boolean acceptSuccess;
 
     public MyWebSocketClient(Context context, Handler handler, URI serverURI) {
         this(context, handler, serverURI, new Draft_17());
@@ -68,17 +72,19 @@ public class MyWebSocketClient extends WebSocketClient {
                     break;
                 case SocketConstants.ACTION_ACCEPT_SERVICE:
                     //收到接受呼叫服务返回结果
-                    mHandler.obtainMessage(WebSocketService.ACCEPT_SERVICE_RESULT,
-                            jsonObject.getBoolean("result")).sendToTarget();
+                    acceptSuccess = jsonObject.getBoolean("result");
+                    mHandler.obtainMessage(WebSocketService.ACCEPT_SERVICE_RESULT, acceptSuccess).sendToTarget();
                     break;
                 case SocketConstants.ACTION_FINISHED_SERVICE:
                     //收到确认完成服务返回结果
                     mHandler.obtainMessage(WebSocketService.FINISHED_SERVICE_RESULT,
                             jsonObject.getBoolean("result")).sendToTarget();
+                    acceptSuccess = false;
                     break;
                 case SocketConstants.ACTION_CANCEL_SERVICE:
                     //---收到取消呼叫服务命令
-                    mHandler.obtainMessage(WebSocketService.CANCEL_SERVICE).sendToTarget();
+                    if (!acceptSuccess)
+                        mHandler.obtainMessage(WebSocketService.CANCEL_SERVICE).sendToTarget();
                     break;
             }
         } catch (JSONException e) {
@@ -115,7 +121,7 @@ public class MyWebSocketClient extends WebSocketClient {
         if (remote) {
             //服务器端主动断开了连接
             //根据code判断服务器断开连接的原因
-            if(code == 1006){
+            if (code == 1006) {
                 //客户端断网了服务器端主动关闭连接
             } else {
                 //已经在其它地方登录了
