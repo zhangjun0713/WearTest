@@ -56,6 +56,8 @@ public class ResponseServiceDialog extends BaseDialog {
                 break;
             case R.id.btn_positive:
                 ToolUtil.stopVibrator(getContext());
+                //已经震动过了，不用再震动了
+                mSharedPreferenceUtil.removeKey(SpfConstants.KEY_NEED_VIBRATE);
                 ToastUtil.showToast(getContext(), "等待机服务器应答", true);
                 try {
                     JSONObject jsonObject = new JSONObject();
