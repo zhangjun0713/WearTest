@@ -83,8 +83,13 @@ public class MyWebSocketClient extends WebSocketClient {
                     break;
                 case SocketConstants.ACTION_CANCEL_SERVICE:
                     //---收到取消呼叫服务命令
-                    if (!acceptSuccess)
-                        mHandler.obtainMessage(WebSocketService.CANCEL_SERVICE).sendToTarget();
+                    if (!acceptSuccess) {
+                        if (jsonObject.getString("clientName").equals(mSharedPreferenceUtil
+                                .getString(SpfConstants.KEY_ROOM_NUMBER, ""))) {
+                            mHandler.obtainMessage(WebSocketService.CANCEL_SERVICE,
+                                    jsonObject.getString(SpfConstants.KEY_ROOM_NUMBER)).sendToTarget();
+                        }
+                    }
                     break;
             }
         } catch (JSONException e) {
@@ -103,7 +108,7 @@ public class MyWebSocketClient extends WebSocketClient {
         String floor = jsonObject.getString(SpfConstants.KEY_AREA_NAME);
         if (floor.equals(mSharedPreferenceUtil.getString(SpfConstants.KEY_AREA_NAME, ""))
                 && mSharedPreferenceUtil.getString(SpfConstants.KEY_ROOM_NUMBER, "").equals("")) {
-            //如果楼层和登录楼层相同，切没有正在服务的房间号则提醒服务员
+            //如果楼层和登录楼层相同，且没有正在服务的房间号则提醒服务员
             mSharedPreferenceUtil.setValue(SpfConstants.KEY_ROOM_NUMBER, roomNumber);
             mSharedPreferenceUtil.setValue(SpfConstants.KEY_NEED_VIBRATE, true);
             if (!isScreenOn()) {
@@ -128,16 +133,6 @@ public class MyWebSocketClient extends WebSocketClient {
                 mHandler.obtainMessage(WebSocketService.GO_TO_LOGIN).sendToTarget();
             }
         }
-//        else {
-//            //本客户端主动断开了连接
-//            if (mReConnectedCount > 0) {
-//                mReConnectedCount = 0;
-//            }
-//            mReConnectedCount++;
-//            if (mReConnectedCount <= 3) {
-//                mHandler.obtainMessage(WebSocketService.RE_CONNECT_SERVER).sendToTarget();
-//            }
-//        }
     }
 
     @Override

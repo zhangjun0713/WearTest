@@ -112,7 +112,9 @@ public class WebSocketService extends Service {
                     break;
                 case CANCEL_SERVICE:
                     //取消呼叫服务
+                    String roomName = (String) msg.obj;
                     Intent cancelCallIntent = new Intent(Constants.BC_CANCEL_SERVICE_DIALOG);
+                    cancelCallIntent.putExtra(SpfConstants.KEY_ROOM_NUMBER,roomName);
                     sendBroadcast(cancelCallIntent);
                     break;
                 case RE_CONNECT_SERVER:
