@@ -14,6 +14,7 @@ import com.ycsoft.wear.common.SpfConstants;
 import com.ycsoft.wear.model.LoginResultEntity;
 import com.ycsoft.wear.service.WebSocketService;
 import com.ycsoft.wear.ui.BaseActivity;
+import com.ycsoft.wear.ui.dialog.LoginDialog;
 import com.ycsoft.wear.util.SharedPreferenceUtil;
 import com.ycsoft.wear.util.ToastUtil;
 import com.ycsoft.wear.util.ToolUtil;
@@ -127,6 +128,9 @@ public class LoginActivity extends BaseActivity {
                             mSharedPreferenceUtil.removeKey(SpfConstants.KEY_AREA_NAME);
                         }
                     }
+                    if (loginDialog.isShowing()) {
+                        loginDialog.dismiss();
+                    }
                 } catch (JsonSyntaxException e) {
                     e.printStackTrace();
                 }
@@ -136,6 +140,9 @@ public class LoginActivity extends BaseActivity {
             public void onError(Throwable ex, boolean isOnCallback) {
                 ex.printStackTrace();
                 ToastUtil.showToast(getApplicationContext(), "访问服务器失败！", true);
+                if (loginDialog.isShowing()) {
+                    loginDialog.dismiss();
+                }
             }
 
             @Override
@@ -148,5 +155,15 @@ public class LoginActivity extends BaseActivity {
             }
         };
         ToolUtil.getToken(this, callback);
+        showLoginDialog();
+    }
+
+    private LoginDialog loginDialog;
+
+    private void showLoginDialog() {
+        loginDialog = new LoginDialog(this);
+        loginDialog.setCanceledOnTouchOutside(false);
+        loginDialog.show(getResources().getDimensionPixelSize(R.dimen.login_dialog_width_height),
+                getResources().getDimensionPixelSize(R.dimen.login_dialog_width_height));
     }
 }

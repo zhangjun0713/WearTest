@@ -4,12 +4,17 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.text.Editable;
+import android.text.TextUtils;
+import android.text.TextWatcher;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.ycsoft.wear.R;
+import com.ycsoft.wear.common.Constants;
 import com.ycsoft.wear.common.SocketConstants;
 import com.ycsoft.wear.common.SpfConstants;
 import com.ycsoft.wear.service.UdpReceiveServerIpService;
@@ -37,6 +42,8 @@ public class SplashActivity extends BaseActivity {
     ImageView ivRegister;
     @BindView(R.id.btn_connect_server)
     Button btnConnectServer;
+    @BindView(R.id.et_server_ip)
+    EditText etServerIp;
     private SharedPreferenceUtil mSharedPreferenceUtil;
     private BroadcastReceiver mReceiver;
     public static final String BC_CONNECTED_SERVER = "bc_connected_server";
@@ -75,12 +82,32 @@ public class SplashActivity extends BaseActivity {
 
     @Override
     protected void initView() {
+        etServerIp.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                if (s.length() > 0) {
+                    btnConnectServer.setText("连接服务器");
+                } else {
+                    btnConnectServer.setText("扫描连接服务器");
+                }
+            }
+        });
         if (mSharedPreferenceUtil.getString(SpfConstants.KEY_SERVER_IP, "").equals("")) {
             ivRegister.setBackgroundResource(R.drawable.icon_disconnect_server);
             btnConnectServer.setVisibility(View.VISIBLE);
+            etServerIp.setVisibility(View.VISIBLE);
         } else {
             ivRegister.setBackgroundResource(R.drawable.icon_connect_server);
             btnConnectServer.setVisibility(View.GONE);
+            etServerIp.setVisibility(View.GONE);
             goMainActivity();
         }
     }
@@ -92,7 +119,18 @@ public class SplashActivity extends BaseActivity {
 
     @OnClick(R.id.btn_connect_server)
     void onClick() {
-        startFindServer();
+        if (TextUtils.isEmpty(etServerIp.getText())) {
+            startFindServer();
+        } else {
+            String serverIp = etServerIp.getText().toString();
+            if (ToolUtil.isIPFormat(serverIp)) {
+                mSharedPreferenceUtil.setValue(SpfConstants.KEY_SERVER_IP, serverIp);
+                Constants.SERVER_IP = serverIp;
+                goMainActivity();
+            } else {
+                ToastUtil.showToast(this, "IP地址有误，请重新输入！", true);
+            }
+        }
     }
 
     /**

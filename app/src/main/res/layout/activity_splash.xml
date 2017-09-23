@@ -33,12 +33,34 @@
             android:layout_height="26dp"
             android:layout_alignParentBottom="true"
             android:layout_centerHorizontal="true"
-            android:layout_marginBottom="30dp"
+            android:layout_marginBottom="20dp"
             android:background="@drawable/bg_button_selector"
             android:gravity="center"
             android:minHeight="30dp"
-            android:text="连接服务器"
+            android:text="扫描连接服务器"
             android:textColor="@color/colorWhite"
             android:textSize="14sp" />
+
+        <EditText
+            android:id="@+id/et_server_ip"
+            android:layout_width="wrap_content"
+            android:layout_height="26dp"
+            android:layout_above="@id/btn_connect_server"
+            android:layout_alignEnd="@id/btn_connect_server"
+            android:layout_alignLeft="@id/btn_connect_server"
+            android:layout_alignRight="@id/btn_connect_server"
+            android:layout_alignStart="@id/btn_connect_server"
+            android:layout_below="@id/include_top"
+            android:layout_centerHorizontal="true"
+            android:layout_marginBottom="10dp"
+            android:layout_marginTop="30dp"
+            android:background="@drawable/et_bg_selector"
+            android:hint="服务器IP"
+            android:inputType="text"
+            android:lines="1"
+            android:paddingEnd="10dp"
+            android:paddingStart="10dp"
+            android:textColorHint="#e5e5e5"
+            android:textSize="12sp" />
     </RelativeLayout>
 </RelativeLayout>
