@@ -14,7 +14,7 @@ import com.ycsoft.wear.common.SpfConstants;
 import com.ycsoft.wear.model.LoginResultEntity;
 import com.ycsoft.wear.service.WebSocketService;
 import com.ycsoft.wear.ui.BaseActivity;
-import com.ycsoft.wear.ui.dialog.LoginDialog;
+import com.ycsoft.wear.ui.dialog.ProgressRemindDialog;
 import com.ycsoft.wear.util.SharedPreferenceUtil;
 import com.ycsoft.wear.util.ToastUtil;
 import com.ycsoft.wear.util.ToolUtil;
@@ -158,10 +158,10 @@ public class LoginActivity extends BaseActivity {
         showLoginDialog();
     }
 
-    private LoginDialog loginDialog;
+    private ProgressRemindDialog loginDialog;
 
     private void showLoginDialog() {
-        loginDialog = new LoginDialog(this);
+        loginDialog = new ProgressRemindDialog(this, "登录中");
         loginDialog.setCanceledOnTouchOutside(false);
         loginDialog.show(getResources().getDimensionPixelSize(R.dimen.login_dialog_width_height),
                 getResources().getDimensionPixelSize(R.dimen.login_dialog_width_height));

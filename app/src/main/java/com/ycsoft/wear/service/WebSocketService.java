@@ -12,7 +12,9 @@ import android.support.annotation.Nullable;
 import android.util.Log;
 
 import com.ycsoft.wear.common.Constants;
+import com.ycsoft.wear.common.SocketConstants;
 import com.ycsoft.wear.common.SpfConstants;
+import com.ycsoft.wear.port.IMessageCallback;
 import com.ycsoft.wear.socket.MyWebSocketClient;
 import com.ycsoft.wear.ui.activity.MainActivity;
 import com.ycsoft.wear.util.SharedPreferenceUtil;
@@ -34,13 +36,18 @@ import java.util.concurrent.Executors;
  * 接收呼叫服务WebSocket服务
  */
 
-public class WebSocketService extends Service {
+public class WebSocketService extends Service implements IMessageCallback {
     private static final String TAG = "WebSocketService";
     private static final String URI_PREFIX = "ws://";
     private static final String URI_SUFFIX = ":80/api/waiter?";
     public static String URI_TOKEN = "";
     private static WebSocketClient webSocketClient;
     private ExecutorService executorService;
+    private SharedPreferenceUtil mSharedPreferenceUtil;
+    /**
+     * 是否成功接受了服务
+     */
+    private boolean acceptSuccess;
 
     /**
      * 获取WebSocketClient
@@ -55,6 +62,7 @@ public class WebSocketService extends Service {
     public void onCreate() {
         super.onCreate();
         executorService = Executors.newFixedThreadPool(5);
+        mSharedPreferenceUtil = new SharedPreferenceUtil(this, SpfConstants.SPF_NAME);
     }
 
     @Override
@@ -70,53 +78,18 @@ public class WebSocketService extends Service {
     }
 
     /**
-     * 打开主界面
-     */
-    public static final int CALL_SERVICE = 1;
-    /**
-     * 取消呼叫服务
-     */
-    public static final int CANCEL_SERVICE = 2;
-    /**
      * 重新连接服务器
      */
-    public static final int RE_CONNECT_SERVER = 3;
+    public static final int RE_CONNECT_SERVER = 1;
     /**
      * 进入登录界面
      */
-    public static final int GO_TO_LOGIN = 4;
-    /**
-     * 接受呼叫服务结果
-     */
-    public static final int ACCEPT_SERVICE_RESULT = 5;
-    /**
-     * 点击完成服务结果
-     */
-    public static final int FINISHED_SERVICE_RESULT = 6;
+    public static final int GO_TO_LOGIN = 2;
     @SuppressLint("HandlerLeak")
     private Handler mHandler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
             switch (msg.what) {
-                case CALL_SERVICE:
-                    //呼叫服务
-                    if (getTopActivity(getApplicationContext()).equals(MainActivity.class.getName())) {
-                        Intent intent = new Intent(Constants.BC_SHOW_CALL_SERVICE_DIALOG);
-                        sendBroadcast(intent);
-                    } else {
-                        Intent intent = new Intent(getApplicationContext(), MainActivity.class);
-                        intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
-                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                        startActivity(intent);
-                    }
-                    break;
-                case CANCEL_SERVICE:
-                    //取消呼叫服务
-                    String roomName = (String) msg.obj;
-                    Intent cancelCallIntent = new Intent(Constants.BC_CANCEL_SERVICE_DIALOG);
-                    cancelCallIntent.putExtra(SpfConstants.KEY_ROOM_NUMBER,roomName);
-                    sendBroadcast(cancelCallIntent);
-                    break;
                 case RE_CONNECT_SERVER:
                     //与服务器连接异常或关闭了需要重新连接
                     ToolUtil.getToken(getApplicationContext(), mCallback);
@@ -133,19 +106,6 @@ public class WebSocketService extends Service {
                         intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
                         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                         startActivity(intent);
-                    }
-                    break;
-                case ACCEPT_SERVICE_RESULT:
-                    Intent acceptResultIntent = new Intent();
-                    acceptResultIntent.putExtra("result", (boolean) msg.obj);
-                    acceptResultIntent.setAction(Constants.BC_ACCEPT_SERVICE_SUCCEED);
-                    sendBroadcast(acceptResultIntent);
-                    break;
-                case FINISHED_SERVICE_RESULT:
-                    if ((boolean) msg.obj) {
-                        //成功确认完成服务，广播通知主界面更新显示
-                        Intent intent2 = new Intent(Constants.BC_FINISHED_SERVICE_SUCCEED);
-                        sendBroadcast(intent2);
                     }
                     break;
             }
@@ -167,6 +127,91 @@ public class WebSocketService extends Service {
             return "";
     }
 
+    @Override
+    public void onMessage(String message) {
+        try {
+            JSONObject jsonObject = new JSONObject(message);
+            switch (jsonObject.getString("action")) {
+                case SocketConstants.ACTION_CALL_SERVICE:
+                    //---收到请求呼叫服务命令
+                    handleCallService(jsonObject);
+                    break;
+                case SocketConstants.ACTION_ACCEPT_SERVICE:
+                    //收到接受呼叫服务返回结果
+                    acceptSuccess = jsonObject.getBoolean("result");
+                    Intent acceptResultIntent = new Intent();
+                    acceptResultIntent.putExtra("result", jsonObject.getBoolean("result"));
+                    acceptResultIntent.setAction(Constants.BC_ACCEPT_SERVICE_SUCCEED);
+                    sendBroadcast(acceptResultIntent);
+                    break;
+                case SocketConstants.ACTION_FINISHED_SERVICE:
+                    //收到确认完成服务返回结果
+                    acceptSuccess = false;
+                    if (jsonObject.getBoolean("result")) {
+                        Intent intent2 = new Intent(Constants.BC_FINISHED_SERVICE_SUCCEED);
+                        sendBroadcast(intent2);
+                    }
+                    break;
+                case SocketConstants.ACTION_CANCEL_SERVICE:
+                    //---收到取消呼叫服务命令
+                    if (!acceptSuccess) {
+                        String clientName = jsonObject.getString("clientName");
+                        String savedClientName = mSharedPreferenceUtil
+                                .getString(SpfConstants.KEY_ROOM_NUMBER, "");
+                        if (clientName.equals(savedClientName)) {
+                            Intent cancelCallIntent = new Intent(Constants.BC_CANCEL_SERVICE_DIALOG);
+                            cancelCallIntent.putExtra(SpfConstants.KEY_ROOM_NUMBER, clientName);
+                            sendBroadcast(cancelCallIntent);
+                        }
+                    }
+                    break;
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void onClose(boolean remote) {
+        if (remote) {
+            mHandler.obtainMessage(GO_TO_LOGIN).sendToTarget();
+        }
+    }
+
+    @Override
+    public void onError() {
+
+    }
+
+    /**
+     * 处理呼叫服务请求
+     *
+     * @param jsonObject
+     * @throws JSONException
+     */
+    private void handleCallService(JSONObject jsonObject) throws JSONException {
+        String roomNumber = jsonObject.getString(SpfConstants.KEY_ROOM_NUMBER);
+        String floor = jsonObject.getString(SpfConstants.KEY_AREA_NAME);
+        if (floor.equals(mSharedPreferenceUtil.getString(SpfConstants.KEY_AREA_NAME, ""))
+                && mSharedPreferenceUtil.getString(SpfConstants.KEY_ROOM_NUMBER, "").equals("")) {
+            //如果楼层和登录楼层相同，且没有正在服务的房间号则提醒服务员
+            mSharedPreferenceUtil.setValue(SpfConstants.KEY_ROOM_NUMBER, roomNumber);
+            mSharedPreferenceUtil.setValue(SpfConstants.KEY_NEED_VIBRATE, true);
+            if (!ToolUtil.isScreenOn(this)) {
+                ToolUtil.wakeUpScreen(this);
+            }
+        }
+        if (getTopActivity(getApplicationContext()).equals(MainActivity.class.getName())) {
+            Intent intent = new Intent(Constants.BC_SHOW_CALL_SERVICE_DIALOG);
+            sendBroadcast(intent);
+        } else {
+            Intent intent = new Intent(getApplicationContext(), MainActivity.class);
+            intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
+        }
+    }
+
     /**
      * 建立WebSocket连接线程类
      */
@@ -179,8 +224,8 @@ public class WebSocketService extends Service {
                     webSocketClient.close();
                     webSocketClient = null;
                 }
-                webSocketClient = new MyWebSocketClient(getApplication(), mHandler,
-                        new URI(URI_PREFIX + Constants.SERVER_IP + URI_SUFFIX + URI_TOKEN));
+                webSocketClient = new MyWebSocketClient(getApplication(),
+                        new URI(URI_PREFIX + Constants.SERVER_IP + URI_SUFFIX + URI_TOKEN), WebSocketService.this);
                 boolean b = webSocketClient.connectBlocking();
                 if (b) {
                     Constants.isConnectedServer = true;
@@ -252,6 +297,7 @@ public class WebSocketService extends Service {
             //当前是登录状态的情况下证明服务是被系统杀掉的，立即重启服务连接服务器
             ToastUtil.showToast(this, "服务异常销毁了，即将重启服务！", true);
             Intent intent = new Intent(getApplication(), WebSocketService.class);
+            intent.setFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
             getApplication().startService(intent);
         }
     }

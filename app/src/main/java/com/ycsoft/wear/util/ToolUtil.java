@@ -121,4 +121,14 @@ public class ToolUtil {
         if (mVibrator != null)
             mVibrator.cancel();
     }
+
+    /**
+     * 判断屏幕是否处于息屏状态
+     *
+     * @return
+     */
+    public static boolean isScreenOn(Context context) {
+        PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+        return pm.isScreenOn();
+    }
 }
