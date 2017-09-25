@@ -332,6 +332,10 @@ public class MainActivity extends BaseActivity {
     }
 
     @Override
+    public void onBackPressed() {
+    }
+
+    @Override
     protected void onDestroy() {
         super.onDestroy();
         if (mReceiver != null) {
