@@ -172,10 +172,18 @@ public class WebSocketService extends Service implements IMessageCallback {
     }
 
     @Override
-    public void onClose(boolean remote) {
+    public void onClose(int code, boolean remote) {
         if (remote) {
-            mHandler.obtainMessage(GO_TO_LOGIN).sendToTarget();
+            //服务器端主动断开了连接
+            //根据code判断服务器断开连接的原因
+            if (code == 1006) {
+                //客户端断网了服务器端主动关闭连接
+                mHandler.obtainMessage(RE_CONNECT_SERVER).sendToTarget();
+            } else {
+                //已经在其它地方登录了
+            }
         }
+        mHandler.obtainMessage(GO_TO_LOGIN).sendToTarget();
     }
 
     @Override

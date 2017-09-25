@@ -16,7 +16,7 @@ public interface IMessageCallback {
     /**
      * 连接中断了
      */
-    void onClose(boolean remote);
+    void onClose(int code, boolean remote);
 
     /**
      * 连接错误

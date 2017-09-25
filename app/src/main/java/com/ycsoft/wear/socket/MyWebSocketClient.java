@@ -58,17 +58,8 @@ public class MyWebSocketClient extends WebSocketClient {
     public void onClose(int code, String reason, boolean remote) {
         Constants.isConnectedServer = false;
         Log.d(TAG, "onClose: \ncode=" + code + "\nreason=" + reason + "\nremote=" + remote);
-        if (remote) {
-            //服务器端主动断开了连接
-            //根据code判断服务器断开连接的原因
-            if (code == 1006) {
-                //客户端断网了服务器端主动关闭连接
-            } else {
-                //已经在其它地方登录了
-            }
-        }
         if (messageCallback != null) {
-            messageCallback.onClose(remote);
+            messageCallback.onClose(code, remote);
         }
     }
 
