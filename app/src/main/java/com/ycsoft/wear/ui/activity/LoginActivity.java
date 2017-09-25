@@ -94,6 +94,12 @@ public class LoginActivity extends BaseActivity {
         login();
     }
 
+    @OnClick(R.id.btn_setting)
+    void onSettingClick() {
+        Intent intent = new Intent(this, SettingActivity.class);
+        startActivity(intent);
+    }
+
     private void login() {
         //调HTTP接口登录
         Callback.CommonCallback<String> callback = new Callback.CommonCallback<String>() {
@@ -163,6 +169,7 @@ public class LoginActivity extends BaseActivity {
     private void showLoginDialog() {
         loginDialog = new ProgressRemindDialog(this, "登录中");
         loginDialog.setCanceledOnTouchOutside(false);
+        loginDialog.setCancelable(false);
         loginDialog.show(getResources().getDimensionPixelSize(R.dimen.login_dialog_width_height),
                 getResources().getDimensionPixelSize(R.dimen.login_dialog_width_height));
     }
