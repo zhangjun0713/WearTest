@@ -46,7 +46,9 @@ public class ProgressRemindDialog extends BaseDialog {
         public void handleMessage(Message msg) {
             switch (msg.what) {
                 case UPDATE_REMIND_TEXT:
-                    if (progressIndex == 1) {
+                    if (progressIndex == 0) {
+                        tvRemind.setText(remindText);
+                    } else if (progressIndex == 1) {
                         tvRemind.setText(remindText + ".");
                     } else if (progressIndex == 2) {
                         tvRemind.setText(remindText + "..");
@@ -56,7 +58,7 @@ public class ProgressRemindDialog extends BaseDialog {
                     if (progressIndex < 3) {
                         progressIndex++;
                     } else {
-                        progressIndex = 1;
+                        progressIndex = 0;
                     }
                     mHandler.sendEmptyMessageDelayed(UPDATE_REMIND_TEXT, 500);
                     break;
