@@ -181,9 +181,9 @@ public class WebSocketService extends Service implements IMessageCallback {
                 mHandler.obtainMessage(RE_CONNECT_SERVER).sendToTarget();
             } else {
                 //已经在其它地方登录了
+                mHandler.obtainMessage(GO_TO_LOGIN).sendToTarget();
             }
         }
-        mHandler.obtainMessage(GO_TO_LOGIN).sendToTarget();
     }
 
     @Override
@@ -238,11 +238,9 @@ public class WebSocketService extends Service implements IMessageCallback {
                 if (b) {
                     Constants.isConnectedServer = true;
                     Log.d(TAG, "run: 与服务器连接成功！");
-                    ToastUtil.showToast(getApplicationContext(), "已连上服务器！", true);
                 } else {
                     Constants.isConnectedServer = false;
                     Log.d(TAG, "run: 与服务器连接失败！");
-                    ToastUtil.showToast(getApplicationContext(), "连接服务器失败！", true);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
