@@ -32,6 +32,7 @@
             android:screenOrientation="portrait" />
         <activity
             android:name="com.ycsoft.wear.ui.activity.LoginActivity"
+            android:launchMode="singleTask"
             android:screenOrientation="portrait" />
         <activity
             android:name=".ui.activity.SettingActivity"
